@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Koruna a Meč — Středověké textové RPG</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#171411;color:#eee7d5;font-family:Georgia,serif}
+.wrap{max-width:1000px;margin:auto;padding:22px}.title{font-size:2.2rem;color:#d8b66a;margin:0}.sub{color:#aaa08e;margin:5px 0 20px}
+.grid{display:grid;grid-template-columns:230px 1fr;gap:18px}.card{background:#28231e;border:1px solid #514536;border-radius:12px;padding:17px;box-shadow:0 10px 30px #0007}
+h3{color:#d8b66a}.stats div{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #41382f}
+.story{min-height:410px;line-height:1.7;white-space:pre-wrap}.log{max-height:240px;overflow:auto}.entry{padding:9px 0;border-bottom:1px solid #40382f}.you{color:#9fc8df}
+textarea{width:100%;min-height:85px;margin-top:14px;background:#15120f;color:#eee7d5;border:1px solid #625342;border-radius:8px;padding:12px;font:16px Georgia;resize:vertical}
+button{background:#b78b43;color:#17120d;border:0;border-radius:7px;padding:10px 15px;margin-top:9px;font-weight:bold;cursor:pointer}.hint{color:#9f9687;font-size:.9rem;margin-top:8px}
+@media(max-width:700px){.grid{grid-template-columns:1fr}}
+</style></head>
+<body><div class="wrap">
+<h1 class="title">⚔️ Koruna a Meč</h1><div class="sub">Středověké textové RPG — rok Páně 1347</div>
+<div class="grid"><aside class="card"><h3>🛡️ Tvá postava</h3>
+<div class="stats"><div>❤️ Životy <b id="hp"></b></div><div>⚔️ Síla <b id="str"></b></div><div>🧠 Rozum <b id="int"></b></div><div>🪙 Groše <b id="gold"></b></div></div>
+<h3>🎒 Výbava</h3><div id="inv"></div><button onclick="location.reload()">Nový příběh</button></aside>
+<main class="card"><div id="story" class="story"></div><textarea id="input" placeholder="Napiš, co uděláš..."></textarea><button onclick="act()">⚔ Provést rozhodnutí</button>
+<div class="hint">Můžeš napsat vlastní akci. Např. „Promluvím si s kovářem“, „Schovám se za sudy“ nebo „Vytáhnu meč“.</div><div id="log" class="log"></div></main></div></div>
+<script>
+let s={hp:100,str:5,int:5,gold:18,inv:["rezavý meč","plášť","kus chleba"],scene:"village",dead:false};
+const scenes={
+village:`Je rok Páně 1347. Království Valdorie se zmítá v neklidu.
+
+Stojíš na prašné návsi vesnice Černý Brod. Nad kamennými domy vlaje královská zástava, ale dnes působí spíš jako varování než jako symbol bezpečí.
+
+Před tebou jsou tři cesty: hrad na kopci, tržiště a stará cesta vedoucí do lesa.
+
+Vtom přijíždí jezdec v potrhaném plášti. Sesedne z koně a šeptne:
+„Králův posel byl přepaden. Někdo chce získat listinu, kterou vezl.“
+
+Jezdec ti podá malý voskem zapečetěný dopis.
+
+Co uděláš?`,
+market:`Na tržišti panuje ruch. Kovář buší do železa, obchodníci se překřikují a hostinský láká pocestné dovnitř.
+
+U kašny stojí muž v černé kápi. Zdá se, že tě pozoruje.
+
+Kovář nabízí práci. Hostinský možná ví něco o přepadeném poslovi.`,
+castle:`Před tebou se tyčí hrad Valdorie. Stráže kontrolují každého, kdo prochází branou.
+
+Jeden ze strážných si všimne pečetě na dopise.
+
+„Tohle bys měl odevzdat purkrabímu. A rychle.“`,
+forest:`Vstoupíš do lesa. Mezi stromy vede stará stezka.
+
+Po chvíli objevíš převrácený povoz. Na zemi leží zlomené kopí a několik kapek zaschlé krve. Nikde není ani živáčka.
+
+Z houští se ozve prasknutí větve.`,
+inn:`Uvnitř hostince U Černého Havrana je teplo a hluk. U stolu v rohu sedí dva ozbrojenci a šeptají si o královské listině.
+
+Hostinský tě zahlédne a nenápadně ukáže na zadní dveře.`
+};
+function render(){hp.textContent=s.hp;str.textContent=s.str;int.textContent=s.int;gold.textContent=s.gold;inv.textContent=s.inv.join(", ");story.textContent=scenes[s.scene]}
+function say(t,c=""){let d=document.createElement("div");d.className="entry "+c;d.textContent=t;log.prepend(d)}
+function act(){
+if(s.dead)return;let raw=input.value.trim();if(!raw)return;input.value="";say("Ty: "+raw,"you");let x=raw.toLowerCase();
+if(/hrad|hradě|hradby|purkrab|stráž/.test(x)){s.scene="castle";say("Vydáváš se k hradu.");}
+else if(/trži|kovář|obchod|kaš/.test(x)){s.scene="market";say("Vydáváš se na tržiště.");}
+else if(/hostinec|hospod|pivo|hospody|černého havrana/.test(x)){s.scene="inn";say("Vcházíš do hostince.");}
+else if(/les|houští|stez|povoz/.test(x)){s.scene="forest";say("Vydáváš se po staré cestě do lesa.");}
+else if(/dopisu|listin|pečet|jezdc/.test(x)){s.int++;say("Rozhodneš se listinu chránit. Rozum +1.");}
+else if(/meč|zaúto|boj|napad/.test(x)){let dmg=3+Math.floor(Math.random()*9);s.hp-=dmg;s.str++;say("Strhne se krátký boj. Utrpíš "+dmg+" poškození, ale získáš zkušenost. Síla +1.");if(s.hp<=0){s.hp=0;s.dead=true;say("Padáš vyčerpáním. Tvůj příběh zde končí.");}}
+else if(/schov|ukry|plíži|tajně/.test(x)){s.int++;say("Opatrně se ukryješ a pozoruješ okolí. Rozum +1.");}
+else if(/odpoč|spát|jídlo|chléb/.test(x)){s.hp=Math.min(100,s.hp+12);say("Odpočineš si a nabereš sílu. +12 životů.");}
+else if(/prozkoum|hledám|hledat/.test(x)){say("Pečlivě prozkoumáš okolí. Něco důležitého tu určitě je.");}
+else if(/koup|prod|práce|kovat/.test(x)){s.gold+=8;say("Pomůžeš na chvíli kováři a vyděláš 8 grošů.");}
+else {say("Tvůj čin změní situaci, ale svět mu zatím nerozumí. Zkus akci popsat konkrétněji.");}
+render()}
+input.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();act()}});render();
+</script></body></html>
