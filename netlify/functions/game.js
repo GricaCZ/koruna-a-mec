@@ -122,4 +122,26 @@ ${action}
       ...ai,
       name: old.name || ai.name || "Hrdina",
       job: old.job || ai.job || "Poutník",
-      turn: Number(old.turn || 0)
+      turn: Number(old.turn || 0) + 1 
+           };
+
+    return {
+      statusCode: 200,
+      headers: {
+        "Content-Type": "application/json; charset=utf-8",
+        "Cache-Control": "no-store"
+      },
+      body: JSON.stringify(result)
+    };
+
+  } catch (error) {
+    return {
+      statusCode: 500,
+      headers: { "Content-Type": "application/json; charset=utf-8" },
+      body: JSON.stringify({
+        error: "Nepodařilo se zpracovat tah hry.",
+        detail: error.message
+      })
+    };
+  }
+}; 
