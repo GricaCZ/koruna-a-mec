@@ -1,48 +1,39 @@
 exports.handler = async function (event) {
-  const json = (statusCode, body) => ({
-    statusCode,
-    headers: {
-      "Content-Type": "application/json; charset=utf-8",
-      "Cache-Control": "no-store"
-    },
-    body: JSON.stringify(body)
-  });
-
   if (event.httpMethod !== "POST") {
-    return json(405, { error: "Použij POST." });
+    return {
+      statusCode: 405,
+      headers: { "Content-Type": "application/json; charset=utf-8" },
+      body: JSON.stringify({ error: "Použij POST." })
+    };
   }
 
   try {
     const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) return json(500, { error: "Na serveru chybí OPENAI_API_KEY." });
+
+    if (!apiKey) {
+      return {
+        statusCode: 500,
+        headers: { "Content-Type": "application/json; charset=utf-8" },
+        body: JSON.stringify({ error: "Chybí OPENAI_API_KEY." })
+      };
+    }
 
     const body = JSON.parse(event.body || "{}");
     const action = String(body.action || "").trim();
-    const old = body.state && typeof body.state === "object" ? body.state : {};
+    const old = body.state || {};
 
-    if (!action) return json(400, { error: "Chybí akce hráče." });
+    if (!action) {
+      return {
+        statusCode: 400,
+        headers: { "Content-Type": "application/json; charset=utf-8" },
+        body: JSON.stringify({ error: "Chybí akce hráče." })
+      };
+    }
 
-    const systemPrompt = `
-Jsi AI vypravěč české středověké textové RPG "Koruna a Meč".
+    const prompt = `
+Jsi český AI vypravěč středověkého RPG Koruna a Meč.
 
-Pokračuj v příběhu podle akce hráče a vrať kompletní nový stav hry jako JSON.
-
-Pravidla:
-- Piš česky.
-- Hráč může zkusit téměř cokoli rozumného.
-- Nikdy nerozhoduj za hráče, co udělá dál.
-- Zachovej návaznost příběhu, NPC, úkoly a důležité události.
-- NPC si mohou pamatovat pomoc, zradu, dluhy, sliby a nepřátelství.
-- XP přidávej jen za skutečný pokrok.
-- Groše měň jen když hráč skutečně něco získá, zaplatí nebo ztratí.
-- Inventář měň jen při skutečném získání, použití nebo ztrátě předmětu.
-- Pokud vznikne souboj, použij combat.
-- Pokud nepřítel padne nebo hráč uteče, nastav combat na null.
-- Bez explicitního sexuálního obsahu.
-- Bez grafického násilí.
-- Odpověz pouze platným JSONem.
-
-Vrať tento tvar:
+Vrať pouze platný JSON:
 {
   "story": "pokračování příběhu",
   "place": "aktuální místo",
@@ -54,10 +45,81 @@ Vrať tento tvar:
   "charisma": 5,
   "gold": 0,
   "reputation": 0,
-  "inventory": ["předmět"],
-  "equipment": {
-    "weapon": "",
-    "armor": ""
-  },
+  "inventory": [],
+  "equipment": {"weapon":"","armor":""},
   "quests": [],
-  "discovered": ["
+  "discovered": [],
+  "npcMemory": {},
+  "worldFlags": {},
+  "combat": null,
+  "summary": "stručné shrnutí",
+  "turn": 1
+}
+
+Pravidla:
+- Piš česky.
+- Zachovej návaznost příběhu.
+- Hráč může dělat vlastní rozhodnutí.
+- Neměň inventář, groše ani statistiky bez důvodu.
+- NPC si mohou pamatovat důležité události.
+- Bez grafického násilí.
+
+PŘEDCHOZÍ STAV:
+${JSON.stringify(old)}
+
+AKCE HRÁČE:
+${action}
+`;
+
+    const response = await fetch("https://api.openai.com/v1/responses", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: "gpt-5.6-luna",
+        input: prompt
+      })
+    });
+
+    const raw = await response.json();
+
+    if (!response.ok) {
+      return {
+        statusCode: response.status,
+        headers: { "Content-Type": "application/json; charset=utf-8" },
+        body: JSON.stringify({
+          error: raw?.error?.message || "Chyba OpenAI API."
+        })
+      };
+    }
+
+    let text = raw.output_text || "";
+
+    if (!text && Array.isArray(raw.output)) {
+      for (const item of raw.output) {
+        if (!Array.isArray(item.content)) continue;
+        for (const part of item.content) {
+          if (part && typeof part.text === "string") {
+            text = part.text;
+            break;
+          }
+        }
+        if (text) break;
+      }
+    }
+
+    text = text
+      .trim()
+      .replace(/^```(?:json)?\s*/i, "")
+      .replace(/\s*```$/, "");
+
+    const ai = JSON.parse(text);
+
+    const result = {
+      ...old,
+      ...ai,
+      name: old.name || ai.name || "Hrdina",
+      job: old.job || ai.job || "Poutník",
+      turn: Number(old.turn || 0)
