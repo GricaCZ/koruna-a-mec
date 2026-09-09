@@ -1,46 +1,48 @@
 exports.handler = async function (event) {
+  const json = (statusCode, body) => ({
+    statusCode,
+    headers: {
+      "Content-Type": "application/json; charset=utf-8",
+      "Cache-Control": "no-store"
+    },
+    body: JSON.stringify(body)
+  });
+
   if (event.httpMethod !== "POST") {
-    return {
-      statusCode: 405,
-      headers: { "Content-Type": "application/json; charset=utf-8" },
-      body: JSON.stringify({ error: "Použij POST." })
-    };
+    return json(405, { error: "Použij POST." });
   }
 
   try {
     const apiKey = process.env.OPENAI_API_KEY;
-
-    if (!apiKey) {
-      return {
-        statusCode: 500,
-        headers: { "Content-Type": "application/json; charset=utf-8" },
-        body: JSON.stringify({ error: "Na serveru chybí OPENAI_API_KEY." })
-      };
-    }
+    if (!apiKey) return json(500, { error: "Na serveru chybí OPENAI_API_KEY." });
 
     const body = JSON.parse(event.body || "{}");
     const action = String(body.action || "").trim();
-    const state = body.state || {};
+    const old = body.state && typeof body.state === "object" ? body.state : {};
 
-    if (!action) {
-      return {
-        statusCode: 400,
-        headers: { "Content-Type": "application/json; charset=utf-8" },
-        body: JSON.stringify({ error: "Chybí akce hráče." })
-      };
-    }
+    if (!action) return json(400, { error: "Chybí akce hráče." });
 
     const systemPrompt = `
-Jsi AI vypravěč české středověké textové RPG s názvem "Koruna a Meč".
+Jsi AI vypravěč české středověké textové RPG "Koruna a Meč".
+
+Pokračuj v příběhu podle akce hráče a vrať kompletní nový stav hry jako JSON.
 
 Pravidla:
 - Piš česky.
-- Reaguj přirozeně na libovolnou rozumnou akci hráče.
-- Nikdy nerozhoduj za hráče.
-- Zachovávej návaznost příběhu a stav postavy.
-- Odpověz pouze jako platný JSON.
+- Hráč může zkusit téměř cokoli rozumného.
+- Nikdy nerozhoduj za hráče, co udělá dál.
+- Zachovej návaznost příběhu, NPC, úkoly a důležité události.
+- NPC si mohou pamatovat pomoc, zradu, dluhy, sliby a nepřátelství.
+- XP přidávej jen za skutečný pokrok.
+- Groše měň jen když hráč skutečně něco získá, zaplatí nebo ztratí.
+- Inventář měň jen při skutečném získání, použití nebo ztrátě předmětu.
+- Pokud vznikne souboj, použij combat.
+- Pokud nepřítel padne nebo hráč uteče, nastav combat na null.
+- Bez explicitního sexuálního obsahu.
+- Bez grafického násilí.
+- Odpověz pouze platným JSONem.
 
-Vrať přesně tento tvar:
+Vrať tento tvar:
 {
   "story": "pokračování příběhu",
   "place": "aktuální místo",
@@ -53,90 +55,9 @@ Vrať přesně tento tvar:
   "gold": 0,
   "reputation": 0,
   "inventory": ["předmět"],
-  "summary": "krátké shrnutí"
-}
-`;
-
-    const input = `
-AKTUÁLNÍ STAV HRY:
-${JSON.stringify(state)}
-
-AKCE HRÁČE:
-${action}
-`;
-
-    const response = await fetch("https://api.openai.com/v1/responses", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${apiKey}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        model: "gpt-5.6-luna",
-        input: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: input }
-        ]
-      })
-    });
-
-    const raw = await response.json();
-
-    if (!response.ok) {
-      return {
-        statusCode: response.status,
-        headers: { "Content-Type": "application/json; charset=utf-8" },
-        body: JSON.stringify({
-          error: raw?.error?.message || "Chyba při komunikaci s AI."
-        })
-      };
-    }
-
-    let text = raw.output_text;
-
-    if (!text && Array.isArray(raw.output)) {
-      for (const item of raw.output) {
-        if (!Array.isArray(item.content)) continue;
-        for (const part of item.content) {
-          if (part && typeof part.text === "string") {
-            text = part.text;
-            break;
-          }
-        }
-        if (text) break;
-      }
-    }
-
-    if (!text) {
-      throw new Error("AI nevrátila textovou odpověď.");
-    }
-
-    text = text.trim();
-
-    if (text.startsWith("```")) {
-      text = text
-        .replace(/^```(?:json)?\s*/i, "")
-        .replace(/\s*```$/, "");
-    }
-
-    const result = JSON.parse(text);
-
-    return {
-      statusCode: 200,
-      headers: {
-        "Content-Type": "application/json; charset=utf-8",
-        "Cache-Control": "no-store"
-      },
-      body: JSON.stringify(result)
-    };
-  } catch (error) {
-    return {
-      statusCode: 500,
-      headers: { "Content-Type": "application/json; charset=utf-8" },
-      body: JSON.stringify({
-        error: "Nepodařilo se zpracovat tah hry.",
-        detail: error.message
-      })
-    };
-  }
-};
+  "equipment": {
+    "weapon": "",
+    "armor": ""
+  },
+  "quests": [],
+  "discovered": ["
