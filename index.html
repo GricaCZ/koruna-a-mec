@@ -125,7 +125,7 @@ async function act(){
     });
     const data=await r.json();
     if(!r.ok) throw new Error(data.error||"Chyba serveru");
-    s=data.state;
+    s=data;
     addHistory("Vypravěč: "+s.story,"ai");
     render();
   }catch(e){
