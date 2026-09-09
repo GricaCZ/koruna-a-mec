@@ -104,7 +104,12 @@ function render(){
   inv.innerHTML=s.inventory.map(i=>`<span class="badge">${escapeHtml(i)}</span>`).join("");
 }
 function escapeHtml(t){return String(t).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
-function addHistory(t,cls){const d=document.createElement("div");d.className="entry "+cls;d.textContent=t;history.prepend(d)}
+function addHistory(t,cls){
+  const d=document.createElement("div");
+  d.className="entry "+cls;
+  d.textContent=t;
+  document.getElementById("history").prepend(d);
+}
 function busy(v){
   sendBtn.disabled=v; input.disabled=v;
   connection.textContent=v?"AI vypravěč přemýšlí…":"AI vypravěč připraven.";
