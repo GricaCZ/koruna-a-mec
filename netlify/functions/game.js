@@ -47,7 +47,16 @@ Vrať pouze platný JSON:
   "reputation": 0,
   "inventory": [],
   "equipment": {"weapon":"","armor":""},
-  "quests": [],
+ "quests": [
+  {
+    "id": "unikatni_id",
+    "title": "název úkolu",
+    "description": "co má hráč udělat",
+    "status": "active",
+    "rewardGold": 0,
+    "rewardXp": 0
+  }
+],
   "discovered": [],
   "npcMemory": {},
   "worldFlags": {},
@@ -61,9 +70,15 @@ Pravidla:
 - Respektuj pohlaví postavy uložené v poli "gender" a používej správné české tvary.
 - Zachovej návaznost příběhu.
 - Hráč může dělat vlastní rozhodnutí.
-- Neměň inventář, groše ani statistiky bez důvodu.
+- Groše a XP sama svévolně neměň. Odměny za úkoly přiděluje server.
+- Inventář a statistiky měň jen tehdy, když to jasně vyplývá z příběhu.
 - NPC si mohou pamatovat důležité události.
 - Bez grafického násilí.
+- Úkoly vytvářej jen tehdy, když to dává smysl podle příběhu.
+- Každý úkol musí mít id, title, description, status, rewardGold a rewardXp.
+- status může být jen "active" nebo "done".
+- Úkol označ jako "done" jen když hráč skutečně splní jeho cíl.
+- Odměny za splněný úkol nepřiděluj opakovaně.
 
 PŘEDCHOZÍ STAV:
 ${JSON.stringify(old)}
@@ -117,15 +132,64 @@ ${action}
       .replace(/\s*```$/, "");
 
     const ai = JSON.parse(text);
+const oldQuests = Array.isArray(old.quests) ? old.quests : [];
+const newQuests = Array.isArray(ai.quests) ? ai.quests : oldQuests;
 
+const oldQuestById = {};
+for (const q of oldQuests) {
+  if (q && q.id) oldQuestById[q.id] = q;
+}
+
+const claimedRewards = {
+  ...((old.worldFlags && old.worldFlags.claimedQuestRewards) || {})
+};
+
+let questGoldReward = 0;
+let questXpReward = 0;
+
+for (const q of newQuests) {
+  if (!q || !q.id) continue;
+
+  const previous = oldQuestById[q.id];
+
+  if (
+    previous &&
+    previous.status !== "done" &&
+    q.status === "done" &&
+    !claimedRewards[q.id]
+  ) {
+    questGoldReward += Math.max(0, Number(q.rewardGold) || 0);
+    questXpReward += Math.max(0, Number(q.rewardXp) || 0);
+    claimedRewards[q.id] = true;
+  }
+}
     const result = {
-      ...old,
-      ...ai,
-      name: old.name || ai.name || "Hrdina",
-      job: old.job || ai.job || "Poutník",
-      gender: old.gender || ai.gender || "Muž",
-      turn: Number(old.turn || 0) + 1 
-           };
+  ...old,
+  ...ai,
+  name: old.name || ai.name || "Hrdina",
+  job: old.job || ai.job || "Poutník",
+  gender: old.gender || ai.gender || "Muž",
+
+  quests: newQuests,
+
+  gold: Math.max(
+    0,
+    Number(old.gold || 0) + questGoldReward
+  ),
+
+  xp: Math.max(
+    0,
+    Number(old.xp || 0) + questXpReward
+  ),
+
+  worldFlags: {
+    ...(old.worldFlags || {}),
+    ...(ai.worldFlags || {}),
+    claimedQuestRewards: claimedRewards
+  },
+
+  turn: Number(old.turn || 0) + 1
+};
 
     return {
       statusCode: 200,
