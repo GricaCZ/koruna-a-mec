@@ -103,7 +103,6 @@ function sanitizeNpcMemory(value, fallback) {
       ? value
       : {};
 
-  // Zachová starší NPC a doplní/aktualizuje nové údaje od AI.
   const source = {
     ...oldData,
     ...newData
@@ -118,24 +117,20 @@ function sanitizeNpcMemory(value, fallback) {
     const name = text(rawName, 60);
     if (!name) continue;
 
-    if (rawValue && typeof rawValue === "object") {
-      const previous =
-        oldData[rawName] && typeof oldData[rawName] === "object"
-          ? oldData[rawName]
-          : {};
+    const previous =
+      oldData[rawName] && typeof oldData[rawName] === "object"
+        ? oldData[rawName]
+        : {};
 
+    if (rawValue && typeof rawValue === "object") {
       out[name] = {
         relationship: clamp(
           Math.floor(
-            num(
-              rawValue.relationship,
-              previous.relationship || 0
-            )
+            num(rawValue.relationship, previous.relationship || 0)
           ),
           -5,
           5
         ),
-
         note: text(
           rawValue.note ||
           rawValue.notes ||
@@ -143,7 +138,6 @@ function sanitizeNpcMemory(value, fallback) {
           previous.notes,
           180
         ),
-
         lastSeen: text(
           rawValue.lastSeen ||
           previous.lastSeen,
