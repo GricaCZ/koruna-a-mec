@@ -139,14 +139,32 @@ input,select{width:100%;margin-top:5px;background:#120f0c;color:white;border:1px
 <div id="startOverlay" class="overlay">
   <div class="modal">
     <h2>Vytvoř hrdinu</h2>
-    <label>Jméno<input id="newName" value="Radovan" maxlength="24"></label>
-    <label>Povolání<select id="newJob">
-      <option>Lovec</option>
-      <option>Žoldnéř</option>
-      <option>Učenec</option>
-      <option>Obchodník</option>
-    </select></label>
-    <button onclick="startGame()">Začít dobrodružství</button>
+
+<label>Jméno
+  <input id="newName" value="Radovan" maxlength="24">
+</label>
+
+<label>Pohlaví
+  <select id="newGender">
+    <option value="Muž">Muž</option>
+    <option value="Žena">Žena</option>
+  </select>
+</label>
+
+<label>Povolání
+  <select id="newJob">
+    <option>Válečník</option>
+    <option>Rytíř</option>
+    <option>Hraničář</option>
+    <option>Lovec</option>
+    <option>Zloděj</option>
+    <option>Žoldnéř</option>
+    <option>Učenec</option>
+    <option>Obchodník</option>
+  </select>
+</label>
+
+<button onclick="startGame()">Začít dobrodružství</button>
   </div>
 </div>
 
@@ -206,9 +224,9 @@ const MAP=[
   {name:"Královské město",key:"kralovske_mesto"}
 ];
 
-function freshState(name,job){
+function freshState(name,job,gender){
   const x={
-    name,job,hp:100,maxHp:100,xp:0,level:1,
+    name,job,gender,hp:100,maxHp:100,xp:0,level:1,
     strength:5,intelligence:5,charisma:5,gold:18,reputation:0,
     place:"Černý Brod",
     inventory:["rezavý meč","plášť","chléb"],
@@ -221,7 +239,39 @@ function freshState(name,job){
     summary:"Hrdina dostal zapečetěnou královskou listinu a stojí na návsi Černého Brodu.",
     story:INTRO,turn:0
   };
+if(job==="Válečník"){
+  x.strength=9;
+  x.maxHp=x.hp=115;
+  x.inventory.push("železný meč","kožená zbroj");
+  x.equipment.weapon="železný meč";
+  x.equipment.armor="kožená zbroj";
+}
 
+  if(job==="Rytíř"){
+    x.strength=8;
+    x.charisma=7;
+    x.maxHp=x.hp=120;
+    x.gold=25;
+    x.reputation=5;
+    x.inventory.push("rytířský meč","řetízková košile");
+    x.equipment.weapon="rytířský meč";
+    x.equipment.armor="řetízková košile";
+}
+
+  if(job==="Hraničář"){
+    x.strength=7;
+    x.intelligence=7;
+    x.inventory.push("lovecký luk","lovecký nůž");
+    x.equipment.weapon="lovecký luk";
+}
+
+  if(job==="Zloděj"){
+    x.intelligence=7;
+    x.charisma=7;
+    x.gold=25;
+    x.inventory.push("dýka","paklíč");
+    x.equipment.weapon="dýka";
+}
   if(job==="Žoldnéř"){
     x.strength=8;x.maxHp=x.hp=110;
     x.inventory.push("kožená zbroj");
@@ -267,7 +317,11 @@ function normalizeState(x){
 function num(v,f){const n=Number(v);return Number.isFinite(n)?n:f}
 
 function startGame(){
-  s=freshState((newName.value||"Radovan").trim(),newJob.value);
+  s=freshState(
+  (newName.value||"Radovan").trim(),
+  newJob.value,
+  newGender.value
+);
   startOverlay.classList.add("hidden");
   render();
 }
