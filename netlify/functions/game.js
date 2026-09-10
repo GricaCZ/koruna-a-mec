@@ -93,9 +93,21 @@ function sanitizeQuests(value, fallback) {
 }
 
 function sanitizeNpcMemory(value, fallback) {
-  const source = value && typeof value === "object"
-    ? value
-    : (fallback && typeof fallback === "object" ? fallback : {});
+  const oldData =
+    fallback && typeof fallback === "object"
+      ? fallback
+      : {};
+
+  const newData =
+    value && typeof value === "object"
+      ? value
+      : {};
+
+  // Zachová starší NPC a doplní/aktualizuje nové údaje od AI.
+  const source = {
+    ...oldData,
+    ...newData
+  };
 
   const out = {};
   let count = 0;
@@ -107,10 +119,36 @@ function sanitizeNpcMemory(value, fallback) {
     if (!name) continue;
 
     if (rawValue && typeof rawValue === "object") {
+      const previous =
+        oldData[rawName] && typeof oldData[rawName] === "object"
+          ? oldData[rawName]
+          : {};
+
       out[name] = {
-        relationship: clamp(Math.floor(num(rawValue.relationship, 0)), -5, 5),
-        note: text(rawValue.note || rawValue.notes, 180),
-        lastSeen: text(rawValue.lastSeen, 80)
+        relationship: clamp(
+          Math.floor(
+            num(
+              rawValue.relationship,
+              previous.relationship || 0
+            )
+          ),
+          -5,
+          5
+        ),
+
+        note: text(
+          rawValue.note ||
+          rawValue.notes ||
+          previous.note ||
+          previous.notes,
+          180
+        ),
+
+        lastSeen: text(
+          rawValue.lastSeen ||
+          previous.lastSeen,
+          80
+        )
       };
     } else {
       out[name] = {
@@ -526,8 +564,38 @@ ${action}
     const oldQuests =
       sanitizeQuests(old.quests, []);
 
-    const newQuests =
-      sanitizeQuests(ai.quests, oldQuests);
+    const aiQuests =
+  sanitizeQuests(ai.quests, []);
+
+const aiQuestById =
+  Object.fromEntries(
+    aiQuests.map(q => [q.id, q])
+  );
+
+const newQuests =
+  oldQuests.map(oldQuest => {
+    const updated =
+      aiQuestById[oldQuest.id];
+
+    if (!updated) {
+      return oldQuest;
+    }
+
+    return {
+      ...oldQuest,
+      ...updated,
+
+      // U existujícího úkolu AI nesmí změnit odměnu.
+      rewardGold: oldQuest.rewardGold,
+      rewardXp: oldQuest.rewardXp
+    };
+  });
+
+for (const q of aiQuests) {
+  if (!oldQuests.some(oldQuest => oldQuest.id === q.id)) {
+    newQuests.push(q);
+  }
+}
 
     const oldQuestById =
       Object.fromEntries(
