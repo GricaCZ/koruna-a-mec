@@ -58,6 +58,7 @@ Vrať pouze platný JSON:
 
 Pravidla:
 - Piš česky.
+- Respektuj pohlaví postavy uložené v poli "gender" a používej správné české tvary.
 - Zachovej návaznost příběhu.
 - Hráč může dělat vlastní rozhodnutí.
 - Neměň inventář, groše ani statistiky bez důvodu.
@@ -122,6 +123,7 @@ ${action}
       ...ai,
       name: old.name || ai.name || "Hrdina",
       job: old.job || ai.job || "Poutník",
+      gender: old.gender || ai.gender || "Muž",
       turn: Number(old.turn || 0) + 1 
            };
 
