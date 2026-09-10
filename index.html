@@ -3,21 +3,21 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Koruna a Meč — AI RPG v4</title>
+<title>Koruna a Meč — AI RPG v6</title>
 <style>
 :root{
   --bg:#100d0b;--panel:#241d17;--panel2:#30261d;--line:#5e4b39;
   --gold:#d7ae61;--txt:#f0e7d5;--muted:#aea38f;--ok:#a8d29d;
-  --bad:#d58d86;--blue:#9fc8e5;--red:#d79287
+  --bad:#d58d86;--blue:#9fc8e5
 }
 *{box-sizing:border-box}
 body{margin:0;background:radial-gradient(circle at top,#2b2118 0,#120f0c 45%,#090706 100%);color:var(--txt);font-family:Georgia,serif}
 .wrap{max-width:1180px;margin:auto;padding:15px}
 .head{display:flex;justify-content:space-between;gap:12px;align-items:flex-end;margin-bottom:14px}
 h1{margin:0;color:var(--gold);font-size:clamp(2rem,6vw,3.2rem)}
-.sub,.note{color:var(--muted)}
+.sub,.note,.small{color:var(--muted)}
 .topButtons,.buttons{display:flex;gap:7px;flex-wrap:wrap}
-.grid{display:grid;grid-template-columns:270px 1fr;gap:14px}
+.grid{display:grid;grid-template-columns:285px 1fr;gap:14px}
 .card{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:15px;padding:15px;box-shadow:0 12px 30px #0008}
 h2,h3{color:var(--gold);margin:0 0 9px}
 .section{margin-top:16px}
@@ -32,24 +32,26 @@ h2,h3{color:var(--gold);margin:0 0 9px}
 textarea{width:100%;min-height:92px;background:#120f0c;color:#fff;border:1px solid #6a5641;border-radius:10px;padding:12px;font:16px Georgia;resize:vertical}
 button{border:0;border-radius:9px;padding:10px 13px;background:#b98842;color:#17110c;font-weight:bold;cursor:pointer}
 button.secondary{background:#3d332a;color:#eee;border:1px solid #655342}
-button.danger{background:#6e3631;color:#fff}
 button:disabled{opacity:.55;cursor:not-allowed}
 .badge{display:inline-flex;gap:5px;align-items:center;background:#40352a;border:1px solid #685440;border-radius:999px;padding:4px 8px;margin:3px;font-size:.86rem}
 .badge.equipped{border-color:var(--gold);color:#ffe2a0}
 .status{padding:9px 10px;border-left:3px solid var(--gold);background:#191510;margin-top:10px}
-.quest{padding:8px;border:1px solid #544332;border-radius:9px;margin:6px 0;background:#1c1713}
-.quest.done{opacity:.65}
-.small{font-size:.88rem;color:var(--muted)}
+.quest,.journalItem{padding:9px;border:1px solid #544332;border-radius:9px;margin:7px 0;background:#1c1713}
+.quest.done{opacity:.68}
+.small{font-size:.88rem}
 .combat{border:1px solid #70433b;background:#241511;padding:10px;border-radius:10px;margin-bottom:10px}
-.combat.hidden{display:none}
 .overlay{position:fixed;inset:0;background:#000c;display:flex;align-items:center;justify-content:center;padding:16px;z-index:20}
 .hidden{display:none!important}
-.modal{width:min(700px,100%);max-height:88vh;overflow:auto;background:#251f19;border:1px solid #67533f;border-radius:14px;padding:18px}
+.modal{width:min(760px,100%);max-height:88vh;overflow:auto;background:#251f19;border:1px solid #67533f;border-radius:14px;padding:18px}
 label{display:block;margin:9px 0}
 input,select{width:100%;margin-top:5px;background:#120f0c;color:white;border:1px solid #5f4c39;border-radius:8px;padding:10px}
 .shopItem,.mapItem,.equipItem{display:flex;justify-content:space-between;gap:10px;align-items:center;border-bottom:1px solid #47392d;padding:10px 0}
 .shopItem:last-child,.mapItem:last-child,.equipItem:last-child{border-bottom:0}
-.pill{padding:3px 7px;border-radius:999px;border:1px solid #66523e;background:#2c241c}
+.pill{padding:3px 7px;border-radius:999px;border:1px solid #66523e;background:#2c241c;display:inline-block}
+.classInfo{margin:10px 0;padding:10px;border:1px solid #594735;border-radius:9px;background:#191510;line-height:1.45}
+.levelBox{border:1px solid #75603d;background:#282011;padding:10px;border-radius:10px;margin:10px 0}
+.repGrid{display:grid;grid-template-columns:1fr 1fr;gap:6px 10px}
+.repItem{padding:6px 0;border-bottom:1px solid #44372b}
 @media(max-width:780px){
   .grid{grid-template-columns:1fr}
   .head{align-items:flex-start;flex-direction:column}
@@ -65,6 +67,7 @@ input,select{width:100%;margin-top:5px;background:#120f0c;color:white;border:1px
       <div class="sub">AI středověké RPG • svět si pamatuje tvoje rozhodnutí</div>
     </div>
     <div class="topButtons">
+      <button class="secondary" onclick="openJournal()">📖 Deník</button>
       <button class="secondary" onclick="openMap()">🗺️ Mapa</button>
       <button class="secondary" onclick="openShop()">🏪 Obchod</button>
       <button class="secondary" onclick="openEquipment()">🛡️ Výbava</button>
@@ -78,6 +81,8 @@ input,select{width:100%;margin-top:5px;background:#120f0c;color:white;border:1px
       <h3>🛡️ Postava</h3>
       <div class="kv"><span>Jméno</span><b id="charNameView"></b></div>
       <div class="kv"><span>Povolání</span><b id="jobView"></b></div>
+      <div class="kv"><span>Pohlaví</span><b id="genderView"></b></div>
+      <div class="kv"><span>🔁 Tah</span><b id="turnView"></b></div>
       <div class="kv"><span>⭐ Úroveň</span><b id="levelView"></b></div>
       <div class="kv"><span>✨ XP</span><b id="xpView"></b></div>
       <div class="bar"><span id="xpBar"></span></div>
@@ -87,7 +92,27 @@ input,select{width:100%;margin-top:5px;background:#120f0c;color:white;border:1px
       <div class="kv"><span>🧠 Rozum</span><b id="intelView"></b></div>
       <div class="kv"><span>🗣️ Přesvědčivost</span><b id="chaView"></b></div>
       <div class="kv"><span>🪙 Groše</span><b id="goldView"></b></div>
-      <div class="kv"><span>🏅 Reputace</span><b id="repView"></b></div>
+
+      <div id="levelBox" class="levelBox hidden">
+        <b>⭐ Bod za úroveň</b>
+        <div class="small">Vyber, co chceš zlepšit.</div>
+        <div class="buttons" style="margin-top:8px">
+          <button onclick="spendPoint('strength')">+ Síla</button>
+          <button onclick="spendPoint('intelligence')">+ Rozum</button>
+          <button onclick="spendPoint('charisma')">+ Přesvědčivost</button>
+          <button onclick="spendPoint('health')">+ Životy</button>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>🏅 Pověst</h3>
+        <div class="repGrid">
+          <div class="repItem">Koruna <b id="repCrown"></b></div>
+          <div class="repItem">Měšťané <b id="repTown"></b></div>
+          <div class="repItem">Venkov <b id="repCountry"></b></div>
+          <div class="repItem">Podsvětí <b id="repUnder"></b></div>
+        </div>
+      </div>
 
       <div class="section">
         <h3>⚙️ Nasazeno</h3>
@@ -115,13 +140,14 @@ input,select{width:100%;margin-top:5px;background:#120f0c;color:white;border:1px
 
     <main class="card">
       <div id="combatBox" class="combat hidden">
-        <b>⚔️ Souboj:</b> <span id="enemyName"></span>
-        <div class="kv"><span>Životy protivníka</span><b id="enemyHp"></b></div>
+        <b>⚔️ Střet:</b> <span id="enemyName"></span>
+        <div class="kv"><span>Výdrž protivníka</span><b id="enemyHp"></b></div>
+        <div class="small">Souboj je vyhodnocován herními pravidly; AI ho pouze vypráví.</div>
       </div>
 
       <div id="storyView" class="story"></div>
 
-      <textarea id="actionInput" placeholder="Napiš vlastní rozhodnutí… třeba: Obejdu hrad zezadu, schovám se ve stínu a hledám tajný vchod."></textarea>
+      <textarea id="actionInput" maxlength="600" placeholder="Napiš vlastní rozhodnutí… třeba: Obejdu hrad zezadu, schovám se ve stínu a hledám tajný vchod."></textarea>
       <div class="buttons">
         <button id="sendBtn" onclick="act()">▶ Udělat to</button>
         <button class="secondary" onclick="quick('Rozhlédnu se kolem a důkladně prozkoumám okolí.')">🔎 Prozkoumat</button>
@@ -130,7 +156,7 @@ input,select{width:100%;margin-top:5px;background:#120f0c;color:white;border:1px
         <button class="secondary" onclick="quick('Zkontroluji svůj inventář a promyslím další postup.')">🎒 Připravit se</button>
       </div>
 
-      <div class="note">AI řídí příběh, NPC, úkoly a následky. Nákupy, výbavu a základní ekonomiku hra hlídá sama, takže se groše ani předměty nemohou jen tak „vykouzlit“.</div>
+      <div class="note">AI řídí příběh, NPC a následky. Úkolové odměny, levelování, obchod a část soubojů hlídají pravidla hry.</div>
       <div id="historyView" class="history"></div>
     </main>
   </div>
@@ -139,39 +165,43 @@ input,select{width:100%;margin-top:5px;background:#120f0c;color:white;border:1px
 <div id="startOverlay" class="overlay">
   <div class="modal">
     <h2>Vytvoř hrdinu</h2>
+    <label>Jméno<input id="newName" value="Radovan" maxlength="24"></label>
+    <label>Pohlaví<select id="newGender">
+      <option value="Muž">Muž</option>
+      <option value="Žena">Žena</option>
+    </select></label>
+    <label>Povolání<select id="newJob" onchange="showClassInfo()">
+      <option>Válečník</option>
+      <option>Rytíř</option>
+      <option>Hraničář</option>
+      <option>Lovec</option>
+      <option>Zloděj</option>
+      <option>Žoldnéř</option>
+      <option>Učenec</option>
+      <option>Obchodník</option>
+    </select></label>
+    <div id="classInfo" class="classInfo"></div>
+    <button onclick="startGame()">Začít dobrodružství</button>
+  </div>
+</div>
 
-<label>Jméno
-  <input id="newName" value="Radovan" maxlength="24">
-</label>
-
-<label>Pohlaví
-  <select id="newGender">
-    <option value="Muž">Muž</option>
-    <option value="Žena">Žena</option>
-  </select>
-</label>
-
-<label>Povolání
-  <select id="newJob">
-    <option>Válečník</option>
-    <option>Rytíř</option>
-    <option>Hraničář</option>
-    <option>Lovec</option>
-    <option>Zloděj</option>
-    <option>Žoldnéř</option>
-    <option>Učenec</option>
-    <option>Obchodník</option>
-  </select>
-</label>
-
-<button onclick="startGame()">Začít dobrodružství</button>
+<div id="journalOverlay" class="overlay hidden">
+  <div class="modal">
+    <h2>📖 Deník dobrodružství</h2>
+    <h3>📜 Úkoly</h3>
+    <div id="journalQuests"></div>
+    <h3 class="section">👥 Známé postavy</h3>
+    <div id="journalNpcs"></div>
+    <h3 class="section">🏅 Pověst</h3>
+    <div id="journalReputation"></div>
+    <div class="buttons section"><button class="secondary" onclick="closeOverlay('journalOverlay')">Zavřít</button></div>
   </div>
 </div>
 
 <div id="shopOverlay" class="overlay hidden">
   <div class="modal">
     <h2>🏪 Obchodník</h2>
-    <div class="small">Ceny jsou pevné. Nakupovat lze jen tehdy, když máš dost grošů.</div>
+    <div class="small">Ceny jsou pevné. Nakoupit lze jen tehdy, když máš dost grošů.</div>
     <div id="shopList"></div>
     <div class="buttons"><button class="secondary" onclick="closeOverlay('shopOverlay')">Zavřít</button></div>
   </div>
@@ -188,7 +218,7 @@ input,select{width:100%;margin-top:5px;background:#120f0c;color:white;border:1px
 <div id="mapOverlay" class="overlay hidden">
   <div class="modal">
     <h2>🗺️ Mapa Valdorie</h2>
-    <div class="small">Cestování spustí nový tah příběhu. Některá místa se odemknou až během dobrodružství.</div>
+    <div class="small">Některá místa se odemknou až během dobrodružství. Cestování spustí nový tah.</div>
     <div id="mapList"></div>
     <div class="buttons"><button class="secondary" onclick="closeOverlay('mapOverlay')">Zavřít</button></div>
   </div>
@@ -196,6 +226,7 @@ input,select{width:100%;margin-top:5px;background:#120f0c;color:white;border:1px
 
 <script>
 let s=null;
+let lastRequestAt=0;
 
 const INTRO=`Je rok Páně 1347.
 
@@ -207,13 +238,28 @@ Na kopci se tyčí hrad Valdorie. Z hostince se ozývá hádka a na lesní cest�
 
 Co uděláš?`;
 
+const CLASS_INFO={
+  "Válečník":"Silná postava pro přímé střety. Bonus: vysoká Síla, více životů a lepší počáteční výbava.",
+  "Rytíř":"Odolný bojovník s dobrým vystupováním. Bonus: hodně životů, zbroj a lepší vztah ke Koruně.",
+  "Hraničář":"Vyvážený průzkumník. Bonus: Síla i Rozum, dobrý v cestování a stopování.",
+  "Lovec":"Praktický znalec přírody. Bonus: vyvážené schopnosti a lovecká výbava.",
+  "Zloděj":"Nenápadný a pohotový. Bonus: Rozum, Přesvědčivost a paklíč pro příběhové možnosti.",
+  "Žoldnéř":"Zkušený bojovník. Bonus: Síla, více životů a kožená zbroj.",
+  "Učenec":"Řeší problémy hlavou. Bonus: vysoký Rozum a poznámkový svazek.",
+  "Obchodník":"Silný v jednání. Bonus: vysoká Přesvědčivost a více startovních grošů."
+};
+
 const SHOP=[
   {name:"chléb",price:3,type:"item"},
   {name:"léčivý odvar",price:12,type:"item"},
-  {name:"železný meč",price:35,type:"weapon",power:2},
-  {name:"lovecký luk",price:40,type:"weapon",power:2},
-  {name:"řetízková košile",price:48,type:"armor",power:2},
-  {name:"pevný plášť",price:18,type:"armor",power:1}
+  {name:"pochodeň",price:5,type:"item"},
+  {name:"lano",price:8,type:"item"},
+  {name:"železný meč",price:35,type:"weapon"},
+  {name:"lovecký luk",price:40,type:"weapon"},
+  {name:"dýka",price:22,type:"weapon"},
+  {name:"řetízková košile",price:48,type:"armor"},
+  {name:"pevný plášť",price:18,type:"armor"},
+  {name:"kožená zbroj",price:30,type:"armor"}
 ];
 
 const MAP=[
@@ -221,57 +267,61 @@ const MAP=[
   {name:"Hrad Valdorie",key:"hrad_valdorie"},
   {name:"Borový les",key:"borovy_les"},
   {name:"Starý mlýn",key:"stary_mlyn"},
-  {name:"Královské město",key:"kralovske_mesto"}
+  {name:"Královské město",key:"kralovske_mesto"},
+  {name:"Stříbrná ves",key:"stribrna_ves"},
+  {name:"Klášter sv. Otmara",key:"klaster_otmara"},
+  {name:"Ruiny Vraní tvrze",key:"vrani_tvrz"},
+  {name:"Jezerní přístav",key:"jezerni_pristav"},
+  {name:"Horský průsmyk",key:"horsky_prusmyk"}
 ];
 
 function freshState(name,job,gender){
   const x={
-    name,job,gender,hp:100,maxHp:100,xp:0,level:1,
-    strength:5,intelligence:5,charisma:5,gold:18,reputation:0,
+    version:6,name,job,gender,hp:100,maxHp:100,xp:0,level:1,spentLevelPoints:0,
+    strength:5,intelligence:5,charisma:5,gold:18,
+    factions:{koruna:0,mestane:0,venkov:0,podsveti:0},
     place:"Černý Brod",
     inventory:["rezavý meč","plášť","chléb"],
     equipment:{weapon:"rezavý meč",armor:"plášť"},
-    quests:[{id:"dopis",title:"Doruč zapečetěnou listinu na hrad",status:"active"}],
+    quests:[{
+      id:"dopis",title:"Doruč zapečetěnou listinu na hrad",
+      description:"Dostaň zapečetěnou královskou listinu bezpečně na hrad Valdorie.",
+      status:"active",rewardGold:20,rewardXp:40
+    }],
     discovered:["cerny_brod","hrad_valdorie","borovy_les"],
     npcMemory:{},
-    worldFlags:{sealedLetter:true},
+    worldFlags:{sealedLetter:true,claimedQuestRewards:{}},
     combat:null,
-    summary:"Hrdina dostal zapečetěnou královskou listinu a stojí na návsi Černého Brodu.",
+    summary:"Postava dostala zapečetěnou královskou listinu a stojí na návsi Černého Brodu.",
     story:INTRO,turn:0
   };
-if(job==="Válečník"){
-  x.strength=9;
-  x.maxHp=x.hp=115;
-  x.inventory.push("železný meč","kožená zbroj");
-  x.equipment.weapon="železný meč";
-  x.equipment.armor="kožená zbroj";
-}
 
+  if(job==="Válečník"){
+    x.strength=9;x.maxHp=x.hp=115;
+    x.inventory=["železný meč","kožená zbroj","chléb"];
+    x.equipment={weapon:"železný meč",armor:"kožená zbroj"};
+  }
   if(job==="Rytíř"){
-    x.strength=8;
-    x.charisma=7;
-    x.maxHp=x.hp=120;
-    x.gold=25;
-    x.reputation=5;
-    x.inventory.push("rytířský meč","řetízková košile");
-    x.equipment.weapon="rytířský meč";
-    x.equipment.armor="řetízková košile";
-}
-
+    x.strength=8;x.charisma=7;x.maxHp=x.hp=120;x.gold=25;
+    x.inventory=["rytířský meč","řetízková košile","plášť"];
+    x.equipment={weapon:"rytířský meč",armor:"řetízková košile"};
+    x.factions.koruna=8;
+  }
   if(job==="Hraničář"){
-    x.strength=7;
-    x.intelligence=7;
-    x.inventory.push("lovecký luk","lovecký nůž");
-    x.equipment.weapon="lovecký luk";
-}
-
+    x.strength=7;x.intelligence=7;
+    x.inventory=["lovecký luk","lovecký nůž","plášť","chléb"];
+    x.equipment={weapon:"lovecký luk",armor:"plášť"};
+  }
+  if(job==="Lovec"){
+    x.strength=6;x.intelligence=6;
+    x.inventory.push("lovecký nůž");
+  }
   if(job==="Zloděj"){
-    x.intelligence=7;
-    x.charisma=7;
-    x.gold=25;
-    x.inventory.push("dýka","paklíč");
-    x.equipment.weapon="dýka";
-}
+    x.intelligence=7;x.charisma=7;x.gold=25;
+    x.inventory=["dýka","paklíč","tmavý plášť","chléb"];
+    x.equipment={weapon:"dýka",armor:"tmavý plášť"};
+    x.factions.podsveti=4;
+  }
   if(job==="Žoldnéř"){
     x.strength=8;x.maxHp=x.hp=110;
     x.inventory.push("kožená zbroj");
@@ -281,54 +331,62 @@ if(job==="Válečník"){
     x.intelligence=8;x.inventory.push("poznámkový svazek");
   }
   if(job==="Obchodník"){
-    x.charisma=8;x.gold=40;
-  }
-  if(job==="Lovec"){
-    x.strength=6;x.intelligence=6;x.inventory.push("lovecký nůž");
+    x.charisma=8;x.gold=40;x.factions.mestane=4;
   }
   return x;
 }
 
 function normalizeState(x){
   x=x||{};
+  x.version=6;
   x.name=x.name||"Hrdina";
   x.job=x.job||"Poutník";
-  x.hp=num(x.hp,100); x.maxHp=Math.max(1,num(x.maxHp,100));
+  x.gender=x.gender||"Muž";
+  x.hp=clamp(num(x.hp,100),0,num(x.maxHp,100));
+  x.maxHp=Math.max(1,num(x.maxHp,100));
   x.xp=Math.max(0,num(x.xp,0));
   x.level=Math.max(1,Math.floor(x.xp/100)+1);
-  x.strength=num(x.strength ?? x.str,5);
-  x.intelligence=num(x.intelligence ?? x.intel,5);
-  x.charisma=num(x.charisma ?? x.cha,5);
-  x.gold=Math.max(0,num(x.gold,0));
-  x.reputation=num(x.reputation ?? x.rep,0);
+  x.spentLevelPoints=Math.max(0,Math.floor(num(x.spentLevelPoints,0)));
+  x.strength=clamp(num(x.strength ?? x.str,5),1,30);
+  x.intelligence=clamp(num(x.intelligence ?? x.intel,5),1,30);
+  x.charisma=clamp(num(x.charisma ?? x.cha,5),1,30);
+  x.gold=Math.max(0,Math.floor(num(x.gold,0)));
+  x.factions=x.factions&&typeof x.factions==="object"?x.factions:{};
+  for(const k of ["koruna","mestane","venkov","podsveti"]) x.factions[k]=clamp(num(x.factions[k],0),-100,100);
   x.place=x.place||"Neznámé místo";
-  x.inventory=Array.isArray(x.inventory)?x.inventory:[];
-  x.equipment=x.equipment||{weapon:"",armor:""};
-  x.quests=Array.isArray(x.quests)?x.quests:[];
+  x.inventory=Array.isArray(x.inventory)?x.inventory.slice(0,40):[];
+  x.equipment=x.equipment&&typeof x.equipment==="object"?x.equipment:{weapon:"",armor:""};
+  x.quests=Array.isArray(x.quests)?x.quests.slice(0,12):[];
   x.discovered=Array.isArray(x.discovered)?x.discovered:["cerny_brod"];
   x.npcMemory=x.npcMemory&&typeof x.npcMemory==="object"?x.npcMemory:{};
   x.worldFlags=x.worldFlags&&typeof x.worldFlags==="object"?x.worldFlags:{};
   x.combat=x.combat&&typeof x.combat==="object"?x.combat:null;
-  x.summary=x.summary||"";
-  x.story=x.story||"";
-  x.turn=num(x.turn,0);
+  x.summary=String(x.summary||"").slice(0,900);
+  x.story=String(x.story||"");
+  x.turn=Math.max(0,Math.floor(num(x.turn,0)));
   return x;
 }
+
 function num(v,f){const n=Number(v);return Number.isFinite(n)?n:f}
+function clamp(v,min,max){return Math.max(min,Math.min(max,v))}
+function availablePoints(){return Math.max(0,(s.level-1)-s.spentLevelPoints)}
+
+function showClassInfo(){
+  classInfo.textContent=CLASS_INFO[newJob.value]||"";
+}
 
 function startGame(){
-  s=freshState(
-  (newName.value||"Radovan").trim(),
-  newJob.value,
-  newGender.value
-);
+  s=freshState((newName.value||"Radovan").trim(),newJob.value,newGender.value);
   startOverlay.classList.add("hidden");
   render();
 }
+
 function render(){
   s=normalizeState(s);
   charNameView.textContent=s.name;
   jobView.textContent=s.job;
+  genderView.textContent=s.gender;
+  turnView.textContent=s.turn;
   levelView.textContent=s.level;
   xpView.textContent=`${s.xp} XP`;
   xpBar.style.width=(s.xp%100)+"%";
@@ -338,11 +396,18 @@ function render(){
   intelView.textContent=s.intelligence;
   chaView.textContent=s.charisma;
   goldView.textContent=s.gold;
-  repView.textContent=s.reputation;
+
+  repCrown.textContent=formatRep(s.factions.koruna);
+  repTown.textContent=formatRep(s.factions.mestane);
+  repCountry.textContent=formatRep(s.factions.venkov);
+  repUnder.textContent=formatRep(s.factions.podsveti);
+
   weaponView.textContent=s.equipment.weapon||"—";
   armorView.textContent=s.equipment.armor||"—";
   placeView.textContent=s.place;
   storyView.textContent=s.story;
+
+  levelBox.classList.toggle("hidden",availablePoints()<=0);
 
   invView.innerHTML=s.inventory.length
     ? s.inventory.map(i=>{
@@ -355,8 +420,9 @@ function render(){
     ? s.quests.map(q=>`<div class="quest ${q.status==="done"?"done":""}">
         <b>${q.status==="done"?"✅":"📌"} ${escapeHtml(q.title||"Úkol")}</b>
         <div class="small">${escapeHtml(q.description||"")}</div>
+        <div class="small">Odměna: ${num(q.rewardGold,0)} 🪙 • ${num(q.rewardXp,0)} XP</div>
       </div>`).join("")
-    : `<span class="small">Žádné aktivní úkoly.</span>`;
+    : `<span class="small">Žádné úkoly.</span>`;
 
   if(s.combat&&s.combat.enemy&&num(s.combat.enemyHp,0)>0){
     combatBox.classList.remove("hidden");
@@ -367,25 +433,47 @@ function render(){
   }
 }
 
+function formatRep(v){return (v>0?"+":"")+v}
+
+function spendPoint(stat){
+  if(!s||availablePoints()<=0)return;
+  if(stat==="strength")s.strength=clamp(s.strength+1,1,30);
+  if(stat==="intelligence")s.intelligence=clamp(s.intelligence+1,1,30);
+  if(stat==="charisma")s.charisma=clamp(s.charisma+1,1,30);
+  if(stat==="health"){s.maxHp+=5;s.hp=Math.min(s.maxHp,s.hp+5)}
+  s.spentLevelPoints++;
+  addHistory("Vylepšení postavy bylo použito.","ok");
+  render();
+}
+
 function escapeHtml(t){
   return String(t).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 }
+
 function addHistory(t,cls){
   const d=document.createElement("div");
   d.className="entry "+cls;
   d.textContent=t;
   document.getElementById("historyView").prepend(d);
 }
+
 function busy(v){
   sendBtn.disabled=v;actionInput.disabled=v;
   connection.textContent=v?"AI vypravěč přemýšlí…":"AI vypravěč připraven.";
 }
+
 function quick(t){actionInput.value=t;actionInput.focus()}
 
 async function act(forcedAction=null){
   if(!s)return;
-  const action=(forcedAction||actionInput.value).trim();
+  const now=Date.now();
+  if(now-lastRequestAt<2000){
+    addHistory("Počkej chvilku před dalším tahem.","bad");
+    return;
+  }
+  const action=(forcedAction||actionInput.value).trim().slice(0,600);
   if(!action)return;
+  lastRequestAt=now;
   actionInput.value="";
   addHistory("Ty: "+action,"you");
   busy(true);
@@ -397,8 +485,10 @@ async function act(forcedAction=null){
     });
     const data=await r.json();
     if(!r.ok)throw new Error(data.error||"Chyba serveru");
+    const beforeLevel=s.level;
     s=normalizeState(data);
     addHistory("Vypravěč: "+s.story,"ai");
+    if(s.level>beforeLevel)addHistory(`Nová úroveň ${s.level}! Máš bod na vylepšení postavy.`,"ok");
     render();
   }catch(e){
     connection.textContent="AI se nepodařilo připojit.";
@@ -410,11 +500,14 @@ async function act(forcedAction=null){
 
 function saveGame(){
   if(!s)return;
-  localStorage.setItem("koruna-a-mec-v4",JSON.stringify(s));
+  localStorage.setItem("koruna-a-mec-v6",JSON.stringify(s));
   addHistory("Hra uložena.","ok");
 }
+
 function loadGame(){
-  let raw=localStorage.getItem("koruna-a-mec-v4")||localStorage.getItem("koruna-a-mec-ai");
+  const raw=localStorage.getItem("koruna-a-mec-v6")
+    ||localStorage.getItem("koruna-a-mec-v4")
+    ||localStorage.getItem("koruna-a-mec-ai");
   if(!raw){addHistory("Žádná uložená hra nebyla nalezena.","bad");return}
   try{
     s=normalizeState(JSON.parse(raw));
@@ -425,7 +518,35 @@ function loadGame(){
     addHistory("Uloženou hru se nepodařilo načíst.","bad");
   }
 }
+
 function closeOverlay(id){document.getElementById(id).classList.add("hidden")}
+
+function openJournal(){
+  if(!s)return;
+  const quests=s.quests||[];
+  journalQuests.innerHTML=quests.length?quests.map(q=>`
+    <div class="journalItem">
+      <b>${q.status==="done"?"✅":"📌"} ${escapeHtml(q.title||"Úkol")}</b>
+      <div class="small">${escapeHtml(q.description||"")}</div>
+      <div class="small">Odměna: ${num(q.rewardGold,0)} 🪙 • ${num(q.rewardXp,0)} XP</div>
+    </div>`).join(""):`<div class="small">Žádné úkoly.</div>`;
+
+  const entries=Object.entries(s.npcMemory||{});
+  journalNpcs.innerHTML=entries.length?entries.map(([name,v])=>{
+    const rel=typeof v==="object"?num(v.relationship,0):0;
+    const note=typeof v==="object"?(v.note||v.notes||""):String(v);
+    return `<div class="journalItem"><b>${escapeHtml(name)}</b>
+      <div class="small">Vztah: ${formatRep(rel)}</div>
+      <div>${escapeHtml(note)}</div></div>`;
+  }).join(""):`<div class="small">Zatím žádné důležité známé postavy.</div>`;
+
+  journalReputation.innerHTML=`
+    <div class="journalItem">👑 Koruna: <b>${formatRep(s.factions.koruna)}</b></div>
+    <div class="journalItem">🏘️ Měšťané: <b>${formatRep(s.factions.mestane)}</b></div>
+    <div class="journalItem">🌾 Venkov: <b>${formatRep(s.factions.venkov)}</b></div>
+    <div class="journalItem">🌑 Podsvětí: <b>${formatRep(s.factions.podsveti)}</b></div>`;
+  journalOverlay.classList.remove("hidden");
+}
 
 function openShop(){
   if(!s)return;
@@ -436,6 +557,7 @@ function openShop(){
     </div>`).join("");
   shopOverlay.classList.remove("hidden");
 }
+
 function buyItem(i){
   const it=SHOP[i];
   if(!s||!it)return;
@@ -459,12 +581,14 @@ function openEquipment(){
   }).join("")||`<div class="small">Nemáš nic, co lze nasadit.</div>`;
   equipOverlay.classList.remove("hidden");
 }
+
 function guessType(item){
   const t=item.toLowerCase();
   if(/meč|luk|nůž|sekera|palcát|kopí|dýka/.test(t))return"weapon";
   if(/zbroj|košile|plášť|brnění|helma/.test(t))return"armor";
   return null;
 }
+
 function equipItem(i,type){
   const item=s.inventory[i];
   if(!item)return;
@@ -484,6 +608,7 @@ function openMap(){
   }).join("");
   mapOverlay.classList.remove("hidden");
 }
+
 function travelTo(place){
   closeOverlay("mapOverlay");
   act(`Vydám se na cestu do místa: ${place}. Popiš cestu a co mě tam čeká.`);
@@ -492,6 +617,8 @@ function travelTo(place){
 actionInput.addEventListener("keydown",e=>{
   if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();act()}
 });
+
+showClassInfo();
 </script>
 </body>
 </html>
