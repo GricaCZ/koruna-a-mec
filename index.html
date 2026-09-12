@@ -73,6 +73,7 @@ input,select{width:100%;margin-top:5px;background:#120f0c;color:white;border:1px
       <button class="secondary" onclick="openEquipment()">🛡️ Výbava</button>
       <button class="secondary" onclick="saveGame()">💾 Uložit</button>
       <button class="secondary" onclick="loadGame()">📜 Načíst</button>
+      <button id="musicButton" onclick="toggleMusic()">🎵 Hudba: vypnuta</button>
     </div>
   </div>
 
@@ -656,7 +657,64 @@ function getCurrentSlot(){
 function setCurrentSlot(slot){
   localStorage.setItem("koruna-a-mec-v7-current-slot", String(slot));
 }
+const MUSIC_KEY="koruna-a-mec-v7-music";
 
+function updateMusicButton(){
+  const music=document.getElementById("bgMusic");
+  const button=document.getElementById("musicButton");
+
+  if(!music || !button)return;
+
+  button.textContent=
+    music.paused
+      ? "🎵 Hudba: vypnuta"
+      : "🔊 Hudba: zapnuta";
+}
+
+async function toggleMusic(){
+  const music=document.getElementById("bgMusic");
+  if(!music)return;
+
+  music.volume=0.25;
+
+  if(music.paused){
+    try{
+      await music.play();
+      localStorage.setItem(MUSIC_KEY,"on");
+    }catch{
+      localStorage.setItem(MUSIC_KEY,"off");
+    }
+  }else{
+    music.pause();
+    localStorage.setItem(MUSIC_KEY,"off");
+  }
+
+  updateMusicButton();
+}
+
+function prepareMusic(){
+  const music=document.getElementById("bgMusic");
+  if(!music)return;
+
+  music.volume=0.25;
+
+  if(localStorage.getItem(MUSIC_KEY)==="on"){
+    const startMusic=async()=>{
+      try{
+        await music.play();
+        updateMusicButton();
+      }catch{}
+
+      document.removeEventListener("click",startMusic);
+    };
+
+    document.addEventListener("click",startMusic);
+  }
+
+  updateMusicButton();
+}
+
+document.addEventListener("DOMContentLoaded",prepareMusic);
 function saveGame(){
   if(!s)return;
 
@@ -864,5 +922,8 @@ actionInput.addEventListener("keydown",e=>{
 
 showClassInfo();
 </script>
+  <audio id="bgMusic" loop preload="auto">
+  <source src="koruna-a-mec.mp3" type="audio/mpeg">
+</audio>
 </body>
 </html>
