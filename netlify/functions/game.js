@@ -484,7 +484,7 @@ AKCE HRÁČE:
 ${action}
 `;
 
-    const response = await fetch(
+    
       const controller = new AbortController();
 
 const timeout = setTimeout(() => {
