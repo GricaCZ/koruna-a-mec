@@ -459,6 +459,8 @@ Vrať POUZE platný JSON v tomto tvaru:
 
 Pravidla:
 - Piš česky a zachovej návaznost.
+- Piš příběhovou část stručně, obvykle 2 až 4 krátké odstavce.
+- Celou JSON odpověď drž co nejkratší. Neopakuj zbytečně informace ze současného stavu.
 - Respektuj pohlaví a povolání postavy; nikdy je svévolně neměň.
 - Nikdy nerozhoduj za hráče. Popiš důsledek a nech prostor pro další rozhodnutí.
 - Dobrodružství může mít napětí a souboje, ale bez grafických detailů.
@@ -510,7 +512,7 @@ const response = await fetch(
     effort: "none"
   },
 
-  max_output_tokens: 1600,
+  max_output_tokens: 2400,
 
   text: {
     format: {
