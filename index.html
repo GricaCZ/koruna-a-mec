@@ -73,6 +73,7 @@ input,select{width:100%;margin-top:5px;background:#120f0c;color:white;border:1px
       <button class="secondary" onclick="openEquipment()">🛡️ Výbava</button>
       <button class="secondary" onclick="saveGame()">💾 Uložit</button>
       <button class="secondary" onclick="loadGame()">📜 Načíst</button>
+      <button id="musicButton" onclick="toggleMusic()">🎵 Hudba: vypnuta</button>
     </div>
   </div>
 
@@ -164,24 +165,68 @@ input,select{width:100%;margin-top:5px;background:#120f0c;color:white;border:1px
 
 <div id="startOverlay" class="overlay">
   <div class="modal">
-    <h2>Vytvoř hrdinu</h2>
-    <label>Jméno<input id="newName" value="Radovan" maxlength="24"></label>
-    <label>Pohlaví<select id="newGender">
-      <option value="Muž">Muž</option>
-      <option value="Žena">Žena</option>
-    </select></label>
-    <label>Povolání<select id="newJob" onchange="showClassInfo()">
-      <option>Válečník</option>
-      <option>Rytíř</option>
-      <option>Hraničář</option>
-      <option>Lovec</option>
-      <option>Zloděj</option>
-      <option>Žoldnéř</option>
-      <option>Učenec</option>
-      <option>Obchodník</option>
-    </select></label>
-    <div id="classInfo" class="classInfo"></div>
-    <button onclick="startGame()">Začít dobrodružství</button>
+    <h2>⚔️ Koruna a Meč</h2>
+    <p>Vítej ve světě Valdorie.</p>
+
+    <div id="mainMenu">
+      <button onclick="showNewGame()">⚔️ Nová hra</button>
+      <button onclick="showLoadGame()">📂 Načíst hru</button>
+    </div>
+
+    <div id="newGameMenu" class="hidden">
+      <h3>Nová postava</h3>
+
+      <label>Jméno
+        <input id="newName" maxlength="30" placeholder="Jméno postavy">
+      </label>
+
+      <label>Pohlaví
+        <select id="newGender">
+          <option value="Muž">Muž</option>
+          <option value="Žena">Žena</option>
+        </select>
+      </label>
+
+      <label>Povolání
+        <select id="newJob" onchange="updateClassDescription()">
+          <option value="Válečník">Válečník</option>
+          <option value="Rytíř">Rytíř</option>
+          <option value="Hraničář">Hraničář</option>
+          <option value="Lovec">Lovec</option>
+          <option value="Zloděj">Zloděj</option>
+          <option value="Žoldnéř">Žoldnéř</option>
+          <option value="Učenec">Učenec</option>
+          <option value="Obchodník">Obchodník</option>
+        </select>
+      </label>
+
+      <div id="classDescription" class="small"></div>
+
+      <h3>Uložit do pozice</h3>
+
+      <select id="newGameSlot">
+        <option value="1">Pozice 1</option>
+        <option value="2">Pozice 2</option>
+        <option value="3">Pozice 3</option>
+        <option value="4">Pozice 4</option>
+        <option value="5">Pozice 5</option>
+      </select>
+
+      <div class="row" style="margin-top:12px">
+        <button onclick="startGame()">Začít dobrodružství</button>
+        <button onclick="showMainMenu()">← Zpět</button>
+      </div>
+    </div>
+
+    <div id="loadGameMenu" class="hidden">
+      <h3>📂 Uložené hry</h3>
+
+      <div id="saveSlots"></div>
+
+      <div style="margin-top:12px">
+        <button onclick="showMainMenu()">← Zpět</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -372,13 +417,121 @@ function clamp(v,min,max){return Math.max(min,Math.min(max,v))}
 function availablePoints(){return Math.max(0,(s.level-1)-s.spentLevelPoints)}
 
 function showClassInfo(){
-  classInfo.textContent=CLASS_INFO[newJob.value]||"";
+  const box=document.getElementById("classDescription");
+  const job=document.getElementById("newJob");
+
+  if(box && job){
+    box.textContent=CLASS_INFO[job.value]||"";
+  }
+}
+function showMainMenu(){
+  document.getElementById("mainMenu").classList.remove("hidden");
+  document.getElementById("newGameMenu").classList.add("hidden");
+  document.getElementById("loadGameMenu").classList.add("hidden");
 }
 
+function showNewGame(){
+  document.getElementById("mainMenu").classList.add("hidden");
+  document.getElementById("newGameMenu").classList.remove("hidden");
+  document.getElementById("loadGameMenu").classList.add("hidden");
+
+  updateClassDescription();
+}
+function migrateLegacySave(){
+  const alreadyMigrated=
+    localStorage.getItem("koruna-a-mec-v7-legacy-migrated");
+
+  if(alreadyMigrated)return;
+
+  const legacyRaw=
+    localStorage.getItem("koruna-a-mec-v6") ||
+    localStorage.getItem("koruna-a-mec-v4") ||
+    localStorage.getItem("koruna-a-mec-ai");
+
+  if(!legacyRaw)return;
+
+  let freeSlot=0;
+
+  for(let slot=1;slot<=5;slot++){
+    if(!localStorage.getItem(getSlotKey(slot))){
+      freeSlot=slot;
+      break;
+    }
+  }
+
+  if(!freeSlot)return;
+
+  try{
+    const legacyState=normalizeState(JSON.parse(legacyRaw));
+
+    localStorage.setItem(
+      getSlotKey(freeSlot),
+      JSON.stringify({
+        ...legacyState,
+        savedAt:new Date().toISOString()
+      })
+    );
+
+    localStorage.setItem(
+      "koruna-a-mec-v7-legacy-migrated",
+      "1"
+    );
+  }catch{
+    // Starý save se nepodařilo převést.
+  }
+}
+function showLoadGame(){
+  migrateLegacySave();
+  document.getElementById("mainMenu").classList.add("hidden");
+  document.getElementById("newGameMenu").classList.add("hidden");
+  document.getElementById("loadGameMenu").classList.remove("hidden");
+
+  renderSaveSlots();
+}
+
+function updateClassDescription(){
+  const box = document.getElementById("classDescription");
+  const job = document.getElementById("newJob").value;
+
+  if(box){
+    box.textContent = CLASS_INFO[job] || "";
+  }
+}
 function startGame(){
-  s=freshState((newName.value||"Radovan").trim(),newJob.value,newGender.value);
+  const slot=Number(document.getElementById("newGameSlot").value)||1;
+  const existing=localStorage.getItem(getSlotKey(slot));
+
+  if(existing){
+    const overwrite=confirm(
+      "Pozice "+slot+" už obsahuje uloženou hru. Opravdu ji chceš přepsat novou postavou?"
+    );
+
+    if(!overwrite)return;
+  }
+
+  s=freshState(
+    (newName.value||"Radovan").trim(),
+    newJob.value,
+    newGender.value
+  );
+
+  setCurrentSlot(slot);
+
+  localStorage.setItem(
+    getSlotKey(slot),
+    JSON.stringify({
+      ...s,
+      savedAt:new Date().toISOString()
+    })
+  );
+
   startOverlay.classList.add("hidden");
   render();
+
+  addHistory(
+    "Nová hra vytvořena v pozici "+slot+".",
+    "ok"
+  );
 }
 
 function render(){
@@ -498,27 +651,181 @@ async function act(forcedAction=null){
   }
 }
 
-function saveGame(){
-  if(!s)return;
-  localStorage.setItem("koruna-a-mec-v6",JSON.stringify(s));
-  addHistory("Hra uložena.","ok");
+function getSlotKey(slot){
+  return "koruna-a-mec-v7-slot-" + slot;
 }
 
-function loadGame(){
-  const raw=localStorage.getItem("koruna-a-mec-v6")
-    ||localStorage.getItem("koruna-a-mec-v4")
-    ||localStorage.getItem("koruna-a-mec-ai");
-  if(!raw){addHistory("Žádná uložená hra nebyla nalezena.","bad");return}
+function getCurrentSlot(){
+  return Number(localStorage.getItem("koruna-a-mec-v7-current-slot")) || 1;
+}
+
+function setCurrentSlot(slot){
+  localStorage.setItem("koruna-a-mec-v7-current-slot", String(slot));
+}
+const MUSIC_KEY="koruna-a-mec-v7-music";
+
+function updateMusicButton(){
+  const music=document.getElementById("bgMusic");
+  const button=document.getElementById("musicButton");
+
+  if(!music || !button)return;
+
+  button.textContent=
+    music.paused
+      ? "🎵 Hudba: vypnuta"
+      : "🔊 Hudba: zapnuta";
+}
+
+async function toggleMusic(){
+  const music=document.getElementById("bgMusic");
+  if(!music)return;
+
+  music.volume=0.25;
+
+  if(music.paused){
+    try{
+      await music.play();
+      localStorage.setItem(MUSIC_KEY,"on");
+    }catch{
+      localStorage.setItem(MUSIC_KEY,"off");
+    }
+  }else{
+    music.pause();
+    localStorage.setItem(MUSIC_KEY,"off");
+  }
+
+  updateMusicButton();
+}
+
+function prepareMusic(){
+  const music=document.getElementById("bgMusic");
+  if(!music)return;
+
+  music.volume=0.25;
+
+  if(localStorage.getItem(MUSIC_KEY)==="on"){
+    const startMusic=async()=>{
+      try{
+        await music.play();
+        updateMusicButton();
+      }catch{}
+
+      document.removeEventListener("click",startMusic);
+    };
+
+    document.addEventListener("click",startMusic);
+  }
+
+  updateMusicButton();
+}
+
+document.addEventListener("DOMContentLoaded",prepareMusic);
+function saveGame(){
+  if(!s)return;
+
+  const slot=getCurrentSlot();
+
+  const saveData={
+    ...s,
+    savedAt:new Date().toISOString()
+  };
+
+  localStorage.setItem(
+    getSlotKey(slot),
+    JSON.stringify(saveData)
+  );
+
+  addHistory("Hra uložena do pozice "+slot+".","ok");
+}
+
+function loadSlot(slot){
+  const raw=localStorage.getItem(getSlotKey(slot));
+
+  if(!raw){
+    return;
+  }
+
   try{
     s=normalizeState(JSON.parse(raw));
+    setCurrentSlot(slot);
+
     startOverlay.classList.add("hidden");
     render();
-    addHistory("Hra načtena.","ok");
+
+    addHistory("Načtena uložená pozice "+slot+".","ok");
   }catch{
-    addHistory("Uloženou hru se nepodařilo načíst.","bad");
+    alert("Uloženou hru se nepodařilo načíst.");
   }
 }
 
+function deleteSlot(slot){
+  if(!localStorage.getItem(getSlotKey(slot)))return;
+
+  if(!confirm("Opravdu chceš smazat uloženou pozici "+slot+"?")){
+    return;
+  }
+
+  localStorage.removeItem(getSlotKey(slot));
+  renderSaveSlots();
+}
+
+function renderSaveSlots(){
+  const box=document.getElementById("saveSlots");
+  if(!box)return;
+
+  box.innerHTML="";
+
+  for(let slot=1;slot<=5;slot++){
+    const raw=localStorage.getItem(getSlotKey(slot));
+    const div=document.createElement("div");
+
+    div.className="card";
+    div.style.marginBottom="10px";
+
+    if(!raw){
+      div.innerHTML=
+        "<b>Pozice "+slot+"</b><br>"+
+        "<span class='small'>Prázdná pozice</span>";
+
+      box.appendChild(div);
+      continue;
+    }
+
+    try{
+      const data=normalizeState(JSON.parse(raw));
+
+      div.innerHTML=
+        "<b>Pozice "+slot+" — "+escapeHtml(data.name)+"</b><br>"+
+        "<span class='small'>"+
+        escapeHtml(data.job)+" • Level "+data.level+
+        " • "+escapeHtml(data.location)+
+        "</span><br>";
+
+      const loadButton=document.createElement("button");
+      loadButton.textContent="▶ Načíst";
+      loadButton.onclick=()=>loadSlot(slot);
+
+      const deleteButton=document.createElement("button");
+      deleteButton.textContent="🗑 Smazat";
+      deleteButton.onclick=()=>deleteSlot(slot);
+      deleteButton.style.marginLeft="6px";
+
+      div.appendChild(loadButton);
+      div.appendChild(deleteButton);
+    }catch{
+      div.innerHTML=
+        "<b>Pozice "+slot+"</b><br>"+
+        "<span class='bad'>Poškozená uložená hra</span>";
+    }
+
+    box.appendChild(div);
+  }
+}
+
+function loadGame(){
+  startOverlay.classList.remove("hidden");
+  showLoadGame();
+}
 function closeOverlay(id){document.getElementById(id).classList.add("hidden")}
 
 function openJournal(){
@@ -620,5 +927,8 @@ actionInput.addEventListener("keydown",e=>{
 
 showClassInfo();
 </script>
+  <audio id="bgMusic" loop preload="auto">
+  <source src="Koruna_a_Mec.mp3" type="audio/mpeg">
+</audio>
 </body>
 </html>
