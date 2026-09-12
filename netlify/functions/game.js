@@ -512,12 +512,15 @@ const response = await fetch(
 
   max_output_tokens: 900,
 
- text: {
-  format: {
-    type: "json_object"
+  text: {
+    format: {
+      type: "json_object"
+    }
   }
-}
-   })
+})
+  }
+);
+
 clearTimeout(timeout);
 
     const raw = await response.json();
