@@ -417,7 +417,12 @@ function clamp(v,min,max){return Math.max(min,Math.min(max,v))}
 function availablePoints(){return Math.max(0,(s.level-1)-s.spentLevelPoints)}
 
 function showClassInfo(){
-  classInfo.textContent=CLASS_INFO[newJob.value]||"";
+  const box=document.getElementById("classDescription");
+  const job=document.getElementById("newJob");
+
+  if(box && job){
+    box.textContent=CLASS_INFO[job.value]||"";
+  }
 }
 function showMainMenu(){
   document.getElementById("mainMenu").classList.remove("hidden");
