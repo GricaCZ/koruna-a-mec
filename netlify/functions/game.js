@@ -484,22 +484,36 @@ AKCE HRÁČE:
 ${action}
 `;
 
-    const response = await fetch(
-      "https://api.openai.com/v1/responses",
-      {
-        method: "POST",
+    
+      const controller = new AbortController();
 
-        headers: {
-          "Authorization": `Bearer ${apiKey}`,
-          "Content-Type": "application/json"
-        },
+const timeout = setTimeout(() => {
+  controller.abort();
+}, 24000);
 
-        body: JSON.stringify({
-          model: "gpt-5.6-luna",
-          input: prompt
-        })
-      }
-    );
+const response = await fetch(
+  "https://api.openai.com/v1/responses",
+  {
+    method: "POST",
+    signal: controller.signal,
+
+    headers: {
+      "Authorization": `Bearer ${apiKey}`,
+      "Content-Type": "application/json"
+    },
+
+    body: JSON.stringify({
+      model: "gpt-5.6-luna",
+      input: prompt,
+      reasoning: {
+        effort: "none"
+      },
+      max_output_tokens: 900
+    })
+  }
+);
+
+clearTimeout(timeout);
 
     const raw = await response.json();
 
@@ -831,16 +845,22 @@ for (const q of aiQuests) {
       result
     );
 
-  } catch (error) {
+ } catch (error) {
+  if (error.name === "AbortError") {
     return json(
-      500,
+      504,
       {
-        error:
-          "Nepodařilo se zpracovat tah hry.",
-
-        detail:
-          error.message
+        error: "AI odpovídá příliš dlouho. Zkus tah znovu."
       }
     );
   }
+
+  return json(
+    500,
+    {
+      error: "Nepodařilo se zpracovat tah hry.",
+      detail: error.message
+    }
+  );
+}
 };
