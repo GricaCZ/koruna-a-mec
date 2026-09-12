@@ -503,13 +503,189 @@ const response = await fetch(
     },
 
     body: JSON.stringify({
-      model: "gpt-5.6-luna",
-      input: prompt,
-      reasoning: {
-        effort: "none"
-      },
-      max_output_tokens: 900
-    })
+  model: "gpt-5.6-luna",
+  input: prompt,
+
+  reasoning: {
+    effort: "none"
+  },
+
+  max_output_tokens: 900,
+
+  text: {
+    format: {
+      type: "json_schema",
+      name: "game_turn",
+      strict: true,
+
+      schema: {
+        type: "object",
+
+        properties: {
+          story: {
+            type: "string"
+          },
+
+          location: {
+            type: "string"
+          },
+
+          hp: {
+            type: "number"
+          },
+
+          inventory: {
+            type: "array",
+            items: {
+              type: "string"
+            }
+          },
+
+          quests: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                id: {
+                  type: "string"
+                },
+                title: {
+                  type: "string"
+                },
+                description: {
+                  type: "string"
+                },
+                status: {
+                  type: "string",
+                  enum: ["active", "done"]
+                },
+                rewardGold: {
+                  type: "number"
+                },
+                rewardXp: {
+                  type: "number"
+                }
+              },
+              required: [
+                "id",
+                "title",
+                "description",
+                "status",
+                "rewardGold",
+                "rewardXp"
+              ],
+              additionalProperties: false
+            }
+          },
+
+          npcMemory: {
+            type: "object",
+            additionalProperties: {
+              type: "object",
+              properties: {
+                relationship: {
+                  type: "number"
+                },
+                note: {
+                  type: "string"
+                },
+                lastSeen: {
+                  type: "string"
+                }
+              },
+              required: [
+                "relationship",
+                "note",
+                "lastSeen"
+              ],
+              additionalProperties: false
+            }
+          },
+
+          factions: {
+            type: "object",
+            properties: {
+              koruna: {
+                type: "number"
+              },
+              mestane: {
+                type: "number"
+              },
+              venkov: {
+                type: "number"
+              },
+              podsveti: {
+                type: "number"
+              }
+            },
+            required: [
+              "koruna",
+              "mestane",
+              "venkov",
+              "podsveti"
+            ],
+            additionalProperties: false
+          },
+
+          discovered: {
+            type: "array",
+            items: {
+              type: "string"
+            }
+          },
+
+          combat: {
+            type: ["object", "null"],
+            properties: {
+              active: {
+                type: "boolean"
+              },
+              enemy: {
+                type: "string"
+              },
+              enemyHp: {
+                type: "number"
+              },
+              enemyMaxHp: {
+                type: "number"
+              },
+              difficulty: {
+                type: "number"
+              }
+            },
+            required: [
+              "active",
+              "enemy",
+              "enemyHp",
+              "enemyMaxHp",
+              "difficulty"
+            ],
+            additionalProperties: false
+          },
+
+          summary: {
+            type: "string"
+          }
+        },
+
+        required: [
+          "story",
+          "location",
+          "hp",
+          "inventory",
+          "quests",
+          "npcMemory",
+          "factions",
+          "discovered",
+          "combat",
+          "summary"
+        ],
+
+        additionalProperties: false
+      }
+    }
+  }
+})
   }
 );
 
