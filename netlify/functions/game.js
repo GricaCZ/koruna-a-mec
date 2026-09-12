@@ -503,13 +503,21 @@ const response = await fetch(
     },
 
     body: JSON.stringify({
-      model: "gpt-5.6-luna",
-      input: prompt,
-      reasoning: {
-        effort: "none"
-      },
-      max_output_tokens: 900
-    })
+  model: "gpt-5.6-luna",
+  input: prompt,
+
+  reasoning: {
+    effort: "none"
+  },
+
+  max_output_tokens: 900,
+
+  text: {
+    format: {
+      type: "json_object"
+    }
+  }
+})
   }
 );
 
