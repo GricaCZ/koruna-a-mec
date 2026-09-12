@@ -510,7 +510,7 @@ const response = await fetch(
     effort: "none"
   },
 
-  max_output_tokens: 900,
+  max_output_tokens: 1600,
 
   text: {
     format: {
@@ -532,7 +532,17 @@ clearTimeout(timeout);
           "Chyba OpenAI API."
       });
     }
-
+if (raw.status === "incomplete") {
+  return json(
+    502,
+    {
+      error: "AI nedokončila odpověď.",
+      detail:
+        raw?.incomplete_details?.reason ||
+        "Neznámý důvod nedokončené odpovědi."
+    }
+  );
+}
     let output = raw.output_text || "";
 
     if (!output && Array.isArray(raw.output)) {
