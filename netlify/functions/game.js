@@ -87,7 +87,7 @@ function sanitizeQuests(value, fallback) {
       rewardXp: clamp(Math.floor(num(raw.rewardXp, 0)), 0, 60)
     });
 
-    if (out.length >= 12) break;
+    if (out.length >= 50) break;
   }
   return out;
 }
@@ -638,7 +638,15 @@ for (const q of aiQuests) {
         ) || {}
       )
     };
-
+for (const q of oldQuests) {
+  if (
+    q &&
+    q.id &&
+    q.status === "done"
+  ) {
+    claimedRewards[q.id] = true;
+  }
+}
     let questGoldReward = 0;
     let questXpReward = 0;
 
@@ -658,7 +666,34 @@ for (const q of aiQuests) {
         claimedRewards[q.id] = true;
       }
     }
+const oldQuestHistory =
+  Array.isArray(old.questHistory)
+    ? old.questHistory
+    : [];
 
+const completedQuests =
+  newQuests.filter(q => q.status === "done");
+
+const activeQuests =
+  newQuests.filter(q => q.status !== "done");
+
+const questHistoryById = new Map();
+
+for (const q of oldQuestHistory) {
+  if (q && q.id) {
+    questHistoryById.set(q.id, q);
+  }
+}
+
+for (const q of completedQuests) {
+  if (q && q.id) {
+    questHistoryById.set(q.id, q);
+  }
+}
+
+const questHistory =
+  Array.from(questHistoryById.values())
+    .slice(-50);
     const maxHp = Math.max(
       1,
       Math.floor(num(old.maxHp, 100))
@@ -822,7 +857,8 @@ for (const q of aiQuests) {
             },
 
       inventory,
-      quests: newQuests,
+quests: activeQuests,
+questHistory,
 
       gold: Math.max(
         0,
