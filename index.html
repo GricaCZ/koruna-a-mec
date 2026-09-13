@@ -401,7 +401,8 @@ function normalizeState(x){
   x.place=x.place||"Neznámé místo";
   x.inventory=Array.isArray(x.inventory)?x.inventory.slice(0,40):[];
   x.equipment=x.equipment&&typeof x.equipment==="object"?x.equipment:{weapon:"",armor:""};
-  x.quests=Array.isArray(x.quests)?x.quests.slice(0,12):[];
+  x.quests=Array.isArray(x.quests)?x.quests.slice(0,10):[];
+  x.questHistory=Array.isArray(x.questHistory)?x.questHistory.slice(-50):[];
   x.discovered=Array.isArray(x.discovered)?x.discovered:["cerny_brod"];
   x.npcMemory=x.npcMemory&&typeof x.npcMemory==="object"?x.npcMemory:{};
   x.worldFlags=x.worldFlags&&typeof x.worldFlags==="object"?x.worldFlags:{};
@@ -830,13 +831,40 @@ function closeOverlay(id){document.getElementById(id).classList.add("hidden")}
 
 function openJournal(){
   if(!s)return;
-  const quests=s.quests||[];
-  journalQuests.innerHTML=quests.length?quests.map(q=>`
-    <div class="journalItem">
-      <b>${q.status==="done"?"✅":"📌"} ${escapeHtml(q.title||"Úkol")}</b>
-      <div class="small">${escapeHtml(q.description||"")}</div>
-      <div class="small">Odměna: ${num(q.rewardGold,0)} 🪙 • ${num(q.rewardXp,0)} XP</div>
-    </div>`).join(""):`<div class="small">Žádné úkoly.</div>`;
+  const quests=Array.isArray(s.quests)?s.quests:[];
+const questHistory=Array.isArray(s.questHistory)?s.questHistory:[];
+
+const activeHtml=quests.length
+  ? quests.map(q=>`
+      <div class="journalItem">
+        <b>📌 ${escapeHtml(q.title||"Úkol")}</b>
+        <div class="small">${escapeHtml(q.description||"")}</div>
+        <div class="small">
+          Odměna: ${num(q.rewardGold,0)} 🪙 • ${num(q.rewardXp,0)} XP
+        </div>
+      </div>
+    `).join("")
+  : `<div class="small">Žádné aktivní úkoly.</div>`;
+
+const historyHtml=questHistory.length
+  ? [...questHistory].reverse().map(q=>`
+      <div class="journalItem">
+        <b>✅ ${escapeHtml(q.title||"Úkol")}</b>
+        <div class="small">${escapeHtml(q.description||"")}</div>
+        <div class="small">
+          Odměna: ${num(q.rewardGold,0)} 🪙 • ${num(q.rewardXp,0)} XP
+        </div>
+      </div>
+    `).join("")
+  : `<div class="small">Zatím žádné splněné úkoly.</div>`;
+
+journalQuests.innerHTML=`
+  <h3>📌 Aktivní úkoly (${quests.length})</h3>
+  ${activeHtml}
+
+  <h3 style="margin-top:18px">✅ Splněné úkoly (${questHistory.length})</h3>
+  ${historyHtml}
+`;
 
   const entries=Object.entries(s.npcMemory||{});
   journalNpcs.innerHTML=entries.length?entries.map(([name,v])=>{
