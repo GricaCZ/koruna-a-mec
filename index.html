@@ -146,9 +146,156 @@ input,select{width:100%;margin-top:5px;background:#120f0c;color:white;border:1px
     grid-template-columns:1fr;
   }
 }
+  /* ===== ÚVODNÍ OBRAZOVKA + NÁPOVĚDA ===== */
+
+.introModal{
+  width:min(1050px,96%);
+  max-height:94vh;
+  overflow:auto;
+  background:#17120e;
+  border:1px solid #765d3e;
+  border-radius:16px;
+  padding:0;
+  box-shadow:0 20px 70px #000;
+}
+
+.introCover{
+  display:block;
+  width:100%;
+  height:auto;
+  border-radius:15px 15px 0 0;
+}
+
+.introContent{
+  padding:20px;
+  text-align:center;
+}
+
+.introContent h2{
+  font-size:2rem;
+  margin:0 0 8px;
+}
+
+.introContent p{
+  line-height:1.6;
+  max-width:800px;
+  margin:10px auto;
+}
+
+.introFeatures{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:10px;
+  margin:18px 0;
+}
+
+.introFeature{
+  background:#241d17;
+  border:1px solid #554331;
+  border-radius:10px;
+  padding:12px;
+}
+
+.introEnter{
+  font-size:1.15rem;
+  padding:13px 25px;
+}
+
+#welcomeOverlay{
+  z-index:40;
+}
+
+.helpGrid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+}
+
+.helpItem{
+  padding:10px;
+  background:#1c1713;
+  border:1px solid #544332;
+  border-radius:9px;
+  line-height:1.45;
+}
+
+@media(max-width:780px){
+  .introFeatures,
+  .helpGrid{
+    grid-template-columns:1fr;
+  }
+}
 </style>
 </head>
 <body>
+  <div id="welcomeOverlay" class="overlay">
+  <div class="introModal">
+
+    <img
+      src="koruna-a-mec-cover.png"
+      alt="Koruna a Meč"
+      class="introCover"
+    >
+
+    <div class="introContent">
+      <h2>👑 Vítej v Koruně a Meči ⚔️</h2>
+
+      <p>
+        <b>Koruna a Meč</b> je české textové RPG s umělou inteligencí.
+        Nevybíráš jen z několika předem připravených možností —
+        můžeš napsat vlastní rozhodnutí a svět na něj reaguje.
+      </p>
+
+      <p>
+        Vytvoř si postavu, prozkoumávej království Valdorie,
+        plň úkoly, získávej vybavení, bojuj, buduj vztahy
+        a rozhoduj o tom, jakým směrem se příběh vydá.
+        Tvoje rozhodnutí mají následky.
+      </p>
+
+      <div class="introFeatures">
+        <div class="introFeature">
+          🗺️ <b>Prozkoumávej svět</b><br>
+          <span class="small">Města, hrady, vesnice a nebezpečná místa.</span>
+        </div>
+
+        <div class="introFeature">
+          📜 <b>Plň úkoly</b><br>
+          <span class="small">Příběh se mění podle tvých činů.</span>
+        </div>
+
+        <div class="introFeature">
+          👥 <b>Buduj vztahy</b><br>
+          <span class="small">Postavy si pamatují, jak ses zachoval.</span>
+        </div>
+
+        <div class="introFeature">
+          ⚔️ <b>Bojuj</b><br>
+          <span class="small">Síla, výbava a rozhodnutí ovlivňují výsledek.</span>
+        </div>
+
+        <div class="introFeature">
+          🏅 <b>Získávej pověst</b><br>
+          <span class="small">Koruna, měšťané, venkov i podsvětí tě hodnotí.</span>
+        </div>
+
+        <div class="introFeature">
+          👑 <b>Ovlivni království</b><br>
+          <span class="small">Tvůj příběh není předem napsaný.</span>
+        </div>
+      </div>
+
+      <button class="introEnter" onclick="enterGame()">
+        ⚔️ Vstoupit do hry
+      </button>
+
+      <div class="small" style="margin-top:12px">
+        korunaamec.cz • Hraj. Přemýšlej. Rozhoduj.
+      </div>
+    </div>
+
+  </div>
+</div>
   <div id="welcomeOverlay" class="overlay">
 <div class="wrap">
   <div class="head">
@@ -419,6 +566,143 @@ input,select{width:100%;margin-top:5px;background:#120f0c;color:white;border:1px
     <div class="buttons section">
       <button onclick="closeOverlay('helpOverlay')">Rozumím</button>
     </div>
+  </div>
+</div>
+    <div id="helpOverlay" class="overlay hidden">
+  <div class="modal">
+    <h2>❓ Nápověda — Koruna a Meč</h2>
+
+    <p>
+      Ve hře můžeš napsat vlastní akci. AI vypravěč podle tvého
+      rozhodnutí pokračuje v příběhu a svět si pamatuje důležité události.
+    </p>
+
+    <h3>🎮 Ovládání hry</h3>
+
+    <div class="helpGrid">
+
+      <div class="helpItem">
+        <b>▶ Udělat to</b><br>
+        Odešle tvoje napsané rozhodnutí a spustí další tah.
+      </div>
+
+      <div class="helpItem">
+        <b>🔎 Prozkoumat</b><br>
+        Připraví akci pro průzkum okolí.
+      </div>
+
+      <div class="helpItem">
+        <b>💬 Promluvit</b><br>
+        Připraví akci pro rozhovor s postavou.
+      </div>
+
+      <div class="helpItem">
+        <b>🥷 Opatrně</b><br>
+        Připraví opatrnější způsob dalšího postupu.
+      </div>
+
+      <div class="helpItem">
+        <b>🎒 Připravit se</b><br>
+        Připraví akci zaměřenou na přípravu před dalším postupem.
+      </div>
+
+      <div class="helpItem">
+        <b>📖 Deník</b><br>
+        Zobrazuje úkoly, důležité postavy a tvoji pověst.
+      </div>
+
+      <div class="helpItem">
+        <b>🗺️ Mapa</b><br>
+        Ukazuje objevená místa. Z mapy můžeš také cestovat.
+      </div>
+
+      <div class="helpItem">
+        <b>🏪 Obchod</b><br>
+        Umožňuje nakupovat předměty za získané groše.
+      </div>
+
+      <div class="helpItem">
+        <b>🛡️ Výbava</b><br>
+        Zde vybíráš používanou zbraň a zbroj.
+      </div>
+
+      <div class="helpItem">
+        <b>💾 Uložit</b><br>
+        Uloží aktuální postup do používaného save slotu.
+      </div>
+
+      <div class="helpItem">
+        <b>📜 Načíst</b><br>
+        Otevře nabídku uložených her.
+      </div>
+
+      <div class="helpItem">
+        <b>🎵 Hudba</b><br>
+        Zapne nebo vypne hudbu hry.
+      </div>
+
+    </div>
+
+    <h3 class="section">🛡️ Postava</h3>
+
+    <div class="helpGrid">
+
+      <div class="helpItem">
+        <b>❤️ Životy</b><br>
+        Aktuální zdraví tvé postavy.
+      </div>
+
+      <div class="helpItem">
+        <b>⭐ Úroveň</b><br>
+        Ukazuje současnou úroveň postavy.
+      </div>
+
+      <div class="helpItem">
+        <b>✨ XP</b><br>
+        Zkušenosti získávané během dobrodružství.
+      </div>
+
+      <div class="helpItem">
+        <b>⚔️ Síla</b><br>
+        Ovlivňuje fyzické akce a souboje.
+      </div>
+
+      <div class="helpItem">
+        <b>🧠 Inteligence</b><br>
+        Pomáhá při znalostech, přemýšlení a řešení problémů.
+      </div>
+
+      <div class="helpItem">
+        <b>🗣️ Charisma</b><br>
+        Pomáhá při jednání s ostatními postavami.
+      </div>
+
+      <div class="helpItem">
+        <b>🪙 Groše</b><br>
+        Peníze používané například v obchodě.
+      </div>
+
+      <div class="helpItem">
+        <b>🏅 Pověst</b><br>
+        Ukazuje, jak tě vnímají různé skupiny ve světě.
+      </div>
+
+    </div>
+
+    <h3 class="section">💡 Důležitý tip</h3>
+
+    <p>
+      Rychlá tlačítka jsou jen pomocníci. Nemusíš se jimi řídit.
+      Do textového pole můžeš napsat vlastní plán a zkusit téměř
+      jakékoliv rozumné řešení situace.
+    </p>
+
+    <div class="buttons section">
+      <button onclick="closeOverlay('helpOverlay')">
+        👍 Rozumím
+      </button>
+    </div>
+
   </div>
 </div>
 <script>
