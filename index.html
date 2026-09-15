@@ -306,6 +306,7 @@ input,select{width:100%;margin-top:5px;background:#120f0c;color:white;border:1px
     <div class="topButtons">
       <button class="secondary" onclick="openHelp()">❓ Nápověda</button>
       <button class="secondary" onclick="openJournal()">📖 Deník</button>
+      <button class="secondary" onclick="openNpcChronicle()">💬 Kronika postav</button>
       <button class="secondary" onclick="openMap()">🗺️ Mapa</button>
       <button class="secondary" onclick="openShop()">🏪 Obchod</button>
       <button class="secondary" onclick="openEquipment()">🛡️ Výbava</button>
@@ -498,6 +499,22 @@ input,select{width:100%;margin-top:5px;background:#120f0c;color:white;border:1px
     <h3 class="section">🏅 Pověst</h3>
     <div id="journalReputation"></div>
     <div class="buttons section"><button class="secondary" onclick="closeOverlay('journalOverlay')">Zavřít</button></div>
+  </div>
+</div>
+  <div id="npcChronicleOverlay" class="overlay hidden">
+  <div class="modal">
+    <h2>💬 Kronika postav</h2>
+    <div class="small">
+      Důležité postavy, které jsi během svého dobrodružství poznal.
+    </div>
+
+    <div id="npcChronicleList" class="section"></div>
+
+    <div class="buttons section">
+      <button class="secondary" onclick="closeOverlay('npcChronicleOverlay')">
+        Zavřít
+      </button>
+    </div>
   </div>
 </div>
 
@@ -1662,7 +1679,35 @@ journalQuests.innerHTML=`
     <div class="journalItem">🌑 Podsvětí: <b>${formatRep(s.factions.podsveti)}</b></div>`;
   journalOverlay.classList.remove("hidden");
 }
+function openNpcChronicle(){
+  if(!s)return;
 
+  const entries=Object.entries(s.npcMemory||{});
+
+  npcChronicleList.innerHTML=entries.length
+    ? entries.map(([name,v])=>{
+        const data=v && typeof v==="object" ? v : {};
+        const rel=num(data.relationship,0);
+        const note=data.note || data.notes || "";
+        const lastSeen=data.lastSeen || "";
+
+        return `
+          <div class="journalItem">
+            <b>👤 ${escapeHtml(name)}</b>
+            <div class="small">Vztah: ${formatRep(rel)}</div>
+            ${lastSeen
+              ? `<div class="small">📍 Naposledy spatřen: ${escapeHtml(lastSeen)}</div>`
+              : ""}
+            ${note
+              ? `<div style="margin-top:6px">${escapeHtml(note)}</div>`
+              : ""}
+          </div>
+        `;
+      }).join("")
+    : `<div class="small">Zatím jsi nepotkal žádnou důležitou postavu.</div>`;
+
+  npcChronicleOverlay.classList.remove("hidden");
+}
 function openShop(){
   if(!s)return;
   shopList.innerHTML=SHOP.map((it,i)=>`
