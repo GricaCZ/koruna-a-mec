@@ -1464,30 +1464,7 @@ const stateForAI = {
     const data=await r.json();
     if(!r.ok)throw new Error(data.error||"Chyba serveru");
     const beforeLevel=s.level;
-    const returnedState = normalizeState(data);
-
-// AI dostala statistiky včetně výbavy.
-// Po návratu je převedeme zpět na základní hodnoty postavy.
-returnedState.strength =
-  Number(returnedState.strength) -
-  (weaponStats.strength || 0) -
-  (armorStats.strength || 0);
-
-returnedState.intelligence =
-  Number(returnedState.intelligence) -
-  (weaponStats.intelligence || 0) -
-  (armorStats.intelligence || 0);
-
-returnedState.charisma =
-  Number(returnedState.charisma) -
-  (weaponStats.charisma || 0) -
-  (armorStats.charisma || 0);
-
-returnedState.maxHp =
-  Number(returnedState.maxHp) -
-  (weaponStats.maxHp || 0) -
-  (armorStats.maxHp || 0);
-
+   s=normalizeState(data);
 s = normalizeState(returnedState);
     // Survival – po každém úspěšném tahu ubývá sytost a energie
 s.hunger=Math.max(0,s.hunger-2);
