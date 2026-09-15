@@ -112,7 +112,7 @@ function sanitizeNpcMemory(value, fallback) {
   let count = 0;
 
   for (const [rawName, rawValue] of Object.entries(source)) {
-    if (count >= 12) break;
+    if (count >= 50) break;
 
     const name = text(rawName, 60);
     if (!name) continue;
@@ -351,7 +351,7 @@ fatigue: Math.max(0, Math.min(100, num(old.fatigue, 100))),
     factions: old.factions || {},
 
     inventory: sanitizeInventory(old.inventory, []),
-
+   
     equipment: old.equipment || {},
 
     quests: sanitizeQuests(old.quests, []),
@@ -473,6 +473,10 @@ Pravidla:
 - Úkol označ "done" pouze po skutečném splnění.
 - Odměny úkolů drž rozumné; server je stejně omezuje.
 - NPC paměť používej pouze pro důležité pojmenované postavy. relationship je od -5 do +5.
+- U NPC v "note" uchovávej stručně nejdůležitější společnou historii: dohody, sliby, pomoc, konflikty, zrady, dluhy a zásadní informace.
+- Existující důležitou vzpomínku nemaž kvůli běžnému rozhovoru. Při nové důležité události ji stručně aktualizuj tak, aby zachovala podstatné starší informace.
+- "lastSeen" vždy označuje místo posledního skutečného setkání hráče s daným NPC.
+- Neměň "relationship" bez důvodu. Zvyšuj nebo snižuj ho pouze podle významného chování hráče vůči danému NPC.
 - Pověst frakcí měň jen po významném rozhodnutí a maximálně o pár bodů.
 - combat je null mimo střet. Při novém střetu použij objekt:
   {"enemy":"název protivníka","enemyHp":30,"enemyMaxHp":30,"difficulty":1}
