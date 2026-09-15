@@ -1082,7 +1082,9 @@ function normalizeState(x){
   for(const k of ["koruna","mestane","venkov","podsveti"]) x.factions[k]=clamp(num(x.factions[k],0),-100,100);
   x.place=x.place||"Neznámé místo";
   x.inventory=Array.isArray(x.inventory)?x.inventory.slice(0,40):[];
-  x.npcMemory=Array.isArray(x.npcMemory)?x.npcMemory.slice(0,50):[];
+  x.npcMemory=x.npcMemory && typeof x.npcMemory==="object" && !Array.isArray(x.npcMemory)
+  ? x.npcMemory
+  : {};
   // Survival stav – 100 = nejlepší stav, 0 = nejhorší
 x.hunger=Number.isFinite(Number(x.hunger))
   ? Math.max(0,Math.min(100,Number(x.hunger)))
