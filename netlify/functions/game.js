@@ -401,7 +401,28 @@ exports.handler = async function (event) {
       body.state && typeof body.state === "object"
         ? body.state
         : {};
+const equipmentBonus =
+  body.equipmentBonus && typeof body.equipmentBonus === "object"
+    ? body.equipmentBonus
+    : {};
 
+const effectiveStats = {
+  strength:
+    num(old.strength, 5) +
+    num(equipmentBonus.strength, 0),
+
+  intelligence:
+    num(old.intelligence, 5) +
+    num(equipmentBonus.intelligence, 0),
+
+  charisma:
+    num(old.charisma, 5) +
+    num(equipmentBonus.charisma, 0),
+
+  maxHp:
+    num(old.maxHp, 100) +
+    num(equipmentBonus.maxHp, 0)
+};
     if (!action) {
       return json(400, {
         error: "Chybí akce hráče."
@@ -486,7 +507,15 @@ ${randomEvent ? `- Do tohoto tahu můžeš přirozeně zapojit náhodnou událos
 
 AKTUÁLNÍ STAV:
 ${JSON.stringify(compactState(old))}
+EFEKTIVNÍ STATISTIKY S NASAZENOU VÝBAVOU:
+- Síla: ${effectiveStats.strength}
+- Rozum: ${effectiveStats.intelligence}
+- Přesvědčivost: ${effectiveStats.charisma}
+- Max. životy: ${effectiveStats.maxHp}
 
+Tyto efektivní statistiky používej při vyhodnocování akcí hráče.
+Obsahují dočasné bonusy z nasazené výbavy.
+Bonusy výbavy nikdy nezapisuj jako trvalé zvýšení základních statistik postavy.
 AKCE HRÁČE:
 ${action}
 `;
