@@ -394,7 +394,16 @@ input,select{width:100%;margin-top:5px;background:#120f0c;color:white;border:1px
         <button class="secondary" onclick="quick('Pokusím se postupovat opatrně a nenápadně.')">🥷 Opatrně</button>
         <button class="secondary" onclick="quick('Zkontroluji svůj inventář a promyslím další postup.')">🎒 Připravit se</button>
       </div>
+<div class="quickSlotsBox">
+  <div class="small"><b>🎒 Rychlé použití</b></div>
 
+  <div class="quickSlots">
+    <button id="quickSlot0" class="secondary" onclick="quickSlotClick(0)">1️⃣ ➕</button>
+    <button id="quickSlot1" class="secondary" onclick="quickSlotClick(1)">2️⃣ ➕</button>
+    <button id="quickSlot2" class="secondary" onclick="quickSlotClick(2)">3️⃣ ➕</button>
+    <button id="quickSlot3" class="secondary" onclick="quickSlotClick(3)">4️⃣ ➕</button>
+  </div>
+</div>
       <div class="note">AI řídí příběh, NPC a následky. Úkolové odměny, levelování, obchod a část soubojů hlídají pravidla hry.</div>
       <div id="historyView" class="history"></div>
     </main>
@@ -497,7 +506,23 @@ input,select{width:100%;margin-top:5px;background:#120f0c;color:white;border:1px
     <div class="buttons"><button class="secondary" onclick="closeOverlay('equipOverlay')">Zavřít</button></div>
   </div>
 </div>
+<div id="quickSlotOverlay" class="overlay hidden">
+  <div class="modal">
+    <h2>🎒 Rychlý slot</h2>
 
+    <div class="small">
+      Vyber spotřební předmět, který chceš přiřadit do tohoto slotu.
+      Zbraně a zbroje sem přiřadit nelze.
+    </div>
+
+    <div id="quickSlotItemList"></div>
+
+    <div class="buttons">
+      <button class="secondary" onclick="clearQuickSlot()">🗑️ Vyprázdnit slot</button>
+      <button class="secondary" onclick="closeOverlay('quickSlotOverlay')">Zavřít</button>
+    </div>
+  </div>
+</div>
 <div id="mapOverlay" class="overlay hidden">
   <div class="modal">
     <h2>🗺️ Mapa Valdorie</h2>
@@ -737,8 +762,8 @@ const CLASS_INFO={
 };
 
 const SHOP=[
-  {name:"chléb",price:3,type:"item"},
-  {name:"léčivý odvar",price:12,type:"item"},
+ {name:"chléb",price:3,type:"item",effect:"heal",value:10,icon:"🍞"},
+{name:"léčivý odvar",price:12,type:"item",effect:"heal",value:30,icon:"🧪"},
   {name:"pochodeň",price:5,type:"item"},
   {name:"lano",price:8,type:"item"},
   {name:"železný meč",price:35,type:"weapon"},
@@ -748,7 +773,131 @@ const SHOP=[
   {name:"pevný plášť",price:18,type:"armor"},
   {name:"kožená zbroj",price:30,type:"armor"}
 ];
+function getItemInfo(name){
+  return SHOP.find(item => item.name === name && item.type === "item") || null;
+}
+let activeQuickSlot=null;
 
+function quickSlotClick(slot){
+  if(!s)return;
+
+  const assigned=s.quickSlots[slot];
+
+  // Obsazený slot = rovnou použít předmět
+ if(assigned){
+  useItem(assigned);
+  return;
+}
+
+  // Prázdný slot = otevřít výběr
+  activeQuickSlot=slot;
+  openQuickSlotPicker();
+}
+
+function openQuickSlotPicker(){
+  const list=document.getElementById("quickSlotItemList");
+  list.innerHTML="";
+
+  const counts={};
+
+  for(const name of s.inventory){
+    const info=getItemInfo(name);
+    if(info)counts[name]=(counts[name]||0)+1;
+  }
+
+  const items=Object.keys(counts);
+
+  if(!items.length){
+    list.innerHTML='<p class="small">Nemáš žádné použitelné předměty.</p>';
+  }else{
+    for(const name of items){
+      const info=getItemInfo(name);
+
+      const button=document.createElement("button");
+      button.className="secondary";
+      button.textContent=`${info.icon||"🎒"} ${name} ×${counts[name]}`;
+      button.onclick=()=>assignQuickSlot(name);
+
+      list.appendChild(button);
+    }
+  }
+
+  document.getElementById("quickSlotOverlay").classList.remove("hidden");
+}
+
+function assignQuickSlot(name){
+  if(activeQuickSlot===null)return;
+
+  s.quickSlots[activeQuickSlot]=name;
+
+  closeOverlay("quickSlotOverlay");
+  activeQuickSlot=null;
+
+  render();
+  autoSave();
+}
+
+function clearQuickSlot(){
+  if(activeQuickSlot===null){
+    closeOverlay("quickSlotOverlay");
+    return;
+  }
+
+  s.quickSlots[activeQuickSlot]=null;
+
+  closeOverlay("quickSlotOverlay");
+  activeQuickSlot=null;
+
+  render();
+  autoSave();
+}
+function useItem(name){
+  if(!s || !Array.isArray(s.inventory)) return;
+
+  const item = getItemInfo(name);
+
+  if(!item){
+    addHistory("Tento předmět nelze použít.","bad");
+    return;
+  }
+
+  const index = s.inventory.indexOf(name);
+
+  if(index === -1){
+    addHistory("Tento předmět už nemáš v inventáři.","bad");
+    return;
+  }
+
+  if(item.effect === "heal"){
+    if(s.hp >= s.maxHp){
+      addHistory("Máš plné zdraví. Léčivý odvar nebyl použit.","bad");
+      return;
+    }
+
+    const before = s.hp;
+    s.hp = Math.min(s.maxHp, s.hp + item.value);
+    const healed = s.hp - before;
+
+    s.inventory.splice(index,1);
+
+    addHistory(
+      `${item.icon} Použil jsi ${item.name} a obnovil ${healed} ❤️ zdraví.`,
+      "ok"
+    );
+
+    render();
+    autoSave();
+    return;
+  }
+
+  if(item.effect === "food"){
+    addHistory(
+      `${item.icon} ${item.name} si zatím ponecháváš. Jídlo bude využívat systém hladu.`,
+      "ok"
+    );
+    return;
+  }
+}
 const MAP=[
   {name:"Černý Brod",key:"cerny_brod"},
   {name:"Hrad Valdorie",key:"hrad_valdorie"},
@@ -842,6 +991,8 @@ function normalizeState(x){
   for(const k of ["koruna","mestane","venkov","podsveti"]) x.factions[k]=clamp(num(x.factions[k],0),-100,100);
   x.place=x.place||"Neznámé místo";
   x.inventory=Array.isArray(x.inventory)?x.inventory.slice(0,40):[];
+  x.quickSlots=Array.isArray(x.quickSlots)?x.quickSlots.slice(0,4):[null,null,null,null];
+while(x.quickSlots.length<4)x.quickSlots.push(null);
   x.equipment=x.equipment&&typeof x.equipment==="object"?x.equipment:{weapon:"",armor:""};
   x.quests=Array.isArray(x.quests)?x.quests.slice(0,10):[];
   x.questHistory=Array.isArray(x.questHistory)?x.questHistory.slice(-50):[];
@@ -1027,6 +1178,33 @@ function render(){
   }else{
     combatBox.classList.add("hidden");
   }
+  // Rychlé sloty
+for(let slot=0;slot<4;slot++){
+  const button=document.getElementById(`quickSlot${slot}`);
+  if(!button)continue;
+
+  const name=s.quickSlots[slot];
+
+  if(!name){
+    button.textContent=`${slot+1}️⃣ ➕`;
+    button.title="Klikni pro přiřazení předmětu";
+    continue;
+  }
+
+  const info=getItemInfo(name);
+  const count=s.inventory.filter(item=>item===name).length;
+
+  // Předmět už v inventáři není
+  if(count<=0){
+    s.quickSlots[slot]=null;
+    button.textContent=`${slot+1}️⃣ ➕`;
+    button.title="Klikni pro přiřazení předmětu";
+    continue;
+  }
+
+  button.textContent=`${slot+1}️⃣ ${info?.icon||"🎒"} ${name} ×${count}`;
+  button.title=`Použít: ${name}`;
+}
 }
 
 function formatRep(v){return (v>0?"+":"")+v}
