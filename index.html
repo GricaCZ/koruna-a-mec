@@ -1446,20 +1446,19 @@ if(s.hp<=0){
   addHistory("Ty: "+action,"you");
   busy(true);
   try{
-    const weaponStats = ITEM_STATS[s.equipment?.weapon] || {};
+   const weaponStats = ITEM_STATS[s.equipment?.weapon] || {};
 const armorStats = ITEM_STATS[s.equipment?.armor] || {};
 
-const stateForAI = {
-  ...s,
-  strength: s.strength + (weaponStats.strength || 0) + (armorStats.strength || 0),
-  intelligence: s.intelligence + (weaponStats.intelligence || 0) + (armorStats.intelligence || 0),
-  charisma: s.charisma + (weaponStats.charisma || 0) + (armorStats.charisma || 0),
-  maxHp: s.maxHp + (weaponStats.maxHp || 0) + (armorStats.maxHp || 0)
+const equipmentBonus = {
+  strength: (weaponStats.strength || 0) + (armorStats.strength || 0),
+  intelligence: (weaponStats.intelligence || 0) + (armorStats.intelligence || 0),
+  charisma: (weaponStats.charisma || 0) + (armorStats.charisma || 0),
+  maxHp: (weaponStats.maxHp || 0) + (armorStats.maxHp || 0)
 };
     const r=await fetch("/.netlify/functions/game",{
       method:"POST",
       headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({state:stateForAI,action})
+      body:JSON.stringify({state:s,action,equipmentBonus})
     });
     const data=await r.json();
     if(!r.ok)throw new Error(data.error||"Chyba serveru");
