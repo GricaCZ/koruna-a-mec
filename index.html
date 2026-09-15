@@ -1472,7 +1472,7 @@ const equipmentBonus = {
     const r=await fetch("/.netlify/functions/game",{
       method:"POST",
       headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({state:s,action,equipmentBonus})
+      body:JSON.stringify({state:s,action})
     });
     const data=await r.json();
     if(!r.ok)throw new Error(data.error||"Chyba serveru");
