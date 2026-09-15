@@ -403,6 +403,9 @@ input,select{width:100%;margin-top:5px;background:#120f0c;color:white;border:1px
     <button id="quickSlot2" class="secondary" onclick="quickSlotClick(2)">3️⃣ ➕</button>
     <button id="quickSlot3" class="secondary" onclick="quickSlotClick(3)">4️⃣ ➕</button>
   </div>
+  <button class="secondary" onclick="openQuickSlotSettings()">
+  ⚙️ Nastavit sloty
+</button>
 </div>
       <div class="note">AI řídí příběh, NPC a následky. Úkolové odměny, levelování, obchod a část soubojů hlídají pravidla hry.</div>
       <div id="historyView" class="history"></div>
@@ -777,7 +780,23 @@ function getItemInfo(name){
   return SHOP.find(item => item.name === name && item.type === "item") || null;
 }
 let activeQuickSlot=null;
+function openQuickSlotSettings(){
+  const choice = prompt(
+    "Který rychlý slot chceš upravit? Zadej číslo 1–4."
+  );
 
+  if(choice === null) return;
+
+  const slot = Number(choice) - 1;
+
+  if(slot < 0 || slot > 3 || !Number.isInteger(slot)){
+    addHistory("Vyber slot číslo 1 až 4.","bad");
+    return;
+  }
+
+  activeQuickSlot = slot;
+  openQuickSlotPicker();
+}
 function quickSlotClick(slot){
   if(!s)return;
 
@@ -801,9 +820,13 @@ function openQuickSlotPicker(){
   const counts={};
 
   for(const name of s.inventory){
-    const info=getItemInfo(name);
-    if(info)counts[name]=(counts[name]||0)+1;
+  const info=getItemInfo(name);
+
+  // Do rychlých slotů jen předměty, které mají skutečný účinek
+  if(info && info.effect){
+    counts[name]=(counts[name]||0)+1;
   }
+}
 
   const items=Object.keys(counts);
 
@@ -1190,12 +1213,12 @@ for(let slot=0;slot<4;slot++){
     button.title="Klikni pro přiřazení předmětu";
     continue;
   }
+const info=getItemInfo(name);
+const count=s.inventory.filter(item=>item===name).length;
 
-  const info=getItemInfo(name);
-  const count=s.inventory.filter(item=>item===name).length;
+// Předmět už není v inventáři nebo nemá rychlý účinek
+if(count<=0 || !info?.effect){
 
-  // Předmět už v inventáři není
-  if(count<=0){
     s.quickSlots[slot]=null;
     button.textContent=`${slot+1}️⃣ ➕`;
     button.title="Klikni pro přiřazení předmětu";
