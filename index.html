@@ -331,7 +331,11 @@ input,select{width:100%;margin-top:5px;background:#120f0c;color:white;border:1px
       <div class="kv"><span>🧠 Rozum</span><b id="intelView"></b></div>
       <div class="kv"><span>🗣️ Přesvědčivost</span><b id="chaView"></b></div>
       <div class="kv"><span>🪙 Groše</span><b id="goldView"></b></div>
+<div class="kv"><span>🍗 Sytost</span><b id="hungerView"></b></div>
+<div class="bar"><span id="hungerBar"></span></div>
 
+<div class="kv"><span>😴 Energie</span><b id="fatigueView"></b></div>
+<div class="bar"><span id="fatigueBar"></span></div>
       <div id="levelBox" class="levelBox hidden">
         <b>⭐ Bod za úroveň</b>
         <div class="small">Vyber, co chceš zlepšit.</div>
@@ -393,6 +397,10 @@ input,select{width:100%;margin-top:5px;background:#120f0c;color:white;border:1px
         <button class="secondary" onclick="quick('Promluvím si s nejbližší postavou a zkusím zjistit, co ví.')">💬 Promluvit</button>
         <button class="secondary" onclick="quick('Pokusím se postupovat opatrně a nenápadně.')">🥷 Opatrně</button>
         <button class="secondary" onclick="quick('Zkontroluji svůj inventář a promyslím další postup.')">🎒 Připravit se</button>
+        <button class="secondary" onclick="restCharacter()">😴 Odpočinout</button>
+        <button id="healerButton" class="secondary hidden" onclick="healerRescue()">
+  🏥 Pomoc léčitele
+</button>
       </div>
 <div class="quickSlotsBox">
   <div class="small"><b>🎒 Rychlé použití</b></div>
@@ -874,6 +882,52 @@ function clearQuickSlot(){
   render();
   autoSave();
 }
+  function healerRescue(){
+  if(!s || s.hp>0)return;
+
+  // Léčitel si vezme 20 % aktuálních grošů
+  const cost=Math.floor(s.gold*0.20);
+  s.gold=Math.max(0,s.gold-cost);
+
+  // Postava se zotaví jen částečně
+  s.hp=Math.max(1,Math.round(s.maxHp*0.30));
+  s.hunger=20;
+  s.fatigue=25;
+
+  addHistory(
+    `🏥 Léčitel tě ošetřil. Zdraví ${s.hp}/${s.maxHp}, Sytost 20 %, Energie 25 %. Zaplatil jsi ${cost} grošů.`,
+    "ok"
+  );
+
+  render();
+  autoSave();
+}
+  function restCharacter(){
+  if(!s)return;
+
+  if(s.fatigue >= 100){
+    addHistory("Jsi úplně odpočatý. Další odpočinek teď nepotřebuješ.","bad");
+    return;
+  }
+
+  const before=s.fatigue;
+
+  // Odpočinek doplní energii
+  s.fatigue=Math.min(100,s.fatigue+25);
+
+  // Během odpočinku trochu vyhládneš
+  s.hunger=Math.max(0,s.hunger-4);
+
+  const restored=s.fatigue-before;
+
+  addHistory(
+    `😴 Odpočinul sis. Energie +${restored} %, Sytost -4 %.`,
+    "ok"
+  );
+
+  render();
+  autoSave();
+}
 function useItem(name){
   if(!s || !Array.isArray(s.inventory)) return;
 
@@ -913,13 +967,27 @@ function useItem(name){
     return;
   }
 
-  if(item.effect === "food"){
-    addHistory(
-      `${item.icon} ${item.name} si zatím ponecháváš. Jídlo bude využívat systém hladu.`,
-      "ok"
-    );
+if(item.effect === "food"){
+  if(s.hunger >= 100){
+    addHistory("Jsi úplně sytý. Jídlo nebylo použito.","bad");
     return;
   }
+
+  const before = s.hunger;
+  s.hunger = Math.min(100, s.hunger + item.value);
+  const restored = s.hunger - before;
+
+  s.inventory.splice(index,1);
+
+  addHistory(
+    `${item.icon} Snědl jsi ${item.name}. Sytost +${restored} %.`,
+    "ok"
+  );
+
+  render();
+  autoSave();
+  return;
+}
 }
 const MAP=[
   {name:"Černý Brod",key:"cerny_brod"},
@@ -1014,6 +1082,14 @@ function normalizeState(x){
   for(const k of ["koruna","mestane","venkov","podsveti"]) x.factions[k]=clamp(num(x.factions[k],0),-100,100);
   x.place=x.place||"Neznámé místo";
   x.inventory=Array.isArray(x.inventory)?x.inventory.slice(0,40):[];
+  // Survival stav – 100 = nejlepší stav, 0 = nejhorší
+x.hunger=Number.isFinite(Number(x.hunger))
+  ? Math.max(0,Math.min(100,Number(x.hunger)))
+  : 100;
+
+x.fatigue=Number.isFinite(Number(x.fatigue))
+  ? Math.max(0,Math.min(100,Number(x.fatigue)))
+  : 100;
   x.quickSlots=Array.isArray(x.quickSlots)?x.quickSlots.slice(0,4):[null,null,null,null];
 while(x.quickSlots.length<4)x.quickSlots.push(null);
   x.equipment=x.equipment&&typeof x.equipment==="object"?x.equipment:{weapon:"",armor:""};
@@ -1166,7 +1242,17 @@ function render(){
   intelView.textContent=s.intelligence;
   chaView.textContent=s.charisma;
   goldView.textContent=s.gold;
+hungerView.textContent=`${Math.round(s.hunger)} %`;
+hungerBar.style.width=`${s.hunger}%`;
 
+fatigueView.textContent=`${Math.round(s.fatigue)} %`;
+fatigueBar.style.width=`${s.fatigue}%`;
+  // Pomoc léčitele se zobrazí pouze při 0 HP
+const healerButton=document.getElementById("healerButton");
+
+if(healerButton){
+  healerButton.classList.toggle("hidden",s.hp>0);
+}
   repCrown.textContent=formatRep(s.factions.koruna);
   repTown.textContent=formatRep(s.factions.mestane);
   repCountry.textContent=formatRep(s.factions.venkov);
@@ -1263,6 +1349,24 @@ function quick(t){actionInput.value=t;actionInput.focus()}
 
 async function act(forcedAction=null){
   if(!s)return;
+   // Při úplném vyčerpání nelze pokračovat bez odpočinku
+  if(s.fatigue<=0){
+    addHistory(
+      "😴 Zhroutil ses vyčerpáním a upadl do bezvědomí. Nejdřív si musíš odpočinout.",
+      "bad"
+    );
+    render();
+    return;
+  }
+// Postava s nulovým zdravím nemůže pokračovat
+if(s.hp<=0){
+  addHistory(
+    "❤️ Zhroutil ses a potřebuješ ošetření. Použij léčivý odvar, nebo zvol pomoc léčitele.",
+    "bad"
+  );
+  render();
+  return;
+}
   const now=Date.now();
   if(now-lastRequestAt<2000){
     addHistory("Počkej chvilku před dalším tahem.","bad");
@@ -1284,6 +1388,21 @@ async function act(forcedAction=null){
     if(!r.ok)throw new Error(data.error||"Chyba serveru");
     const beforeLevel=s.level;
     s=normalizeState(data);
+    // Survival – po každém úspěšném tahu ubývá sytost a energie
+s.hunger=Math.max(0,s.hunger-2);
+s.fatigue=Math.max(0,s.fatigue-1);
+    // Při úplném vyhladovění postava ztrácí zdraví
+if(s.hunger===0){
+  s.hp=Math.max(0,s.hp-10);
+  addHistory("🍗 Jsi úplně vyhladovělý. Ztrácíš 10 ❤️ zdraví.","bad");
+}
+    if(s.hunger<=20 && s.hunger>0){
+  addHistory(`🍗 Máš hlad. Sytost klesla na ${s.hunger} %.`,"bad");
+}
+
+if(s.fatigue<=20 && s.fatigue>0){
+  addHistory(`😴 Jsi unavený. Energie klesla na ${s.fatigue} %.`,"bad");
+}
     addHistory("Vypravěč: "+s.story,"ai");
     if(s.level>beforeLevel)addHistory(`Nová úroveň ${s.level}! Máš bod na vylepšení postavy.`,"ok");
     render();

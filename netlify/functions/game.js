@@ -346,7 +346,8 @@ function compactState(old) {
     charisma: num(old.charisma, 5),
 
     gold: num(old.gold, 0),
-
+hunger: Math.max(0, Math.min(100, num(old.hunger, 100))),
+fatigue: Math.max(0, Math.min(100, num(old.fatigue, 100))),
     factions: old.factions || {},
 
     inventory: sanitizeInventory(old.inventory, []),
