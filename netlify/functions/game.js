@@ -351,6 +351,9 @@ fatigue: Math.max(0, Math.min(100, num(old.fatigue, 100))),
     factions: old.factions || {},
 
     inventory: sanitizeInventory(old.inventory, []),
+    npcMemory: Array.isArray(old.npcMemory)
+  ? old.npcMemory.slice(-20)
+  : [],
 
     equipment: old.equipment || {},
 
