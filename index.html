@@ -1125,7 +1125,14 @@ function normalizeState(x){
   x.name=x.name||"Hrdina";
   x.job=x.job||"Poutník";
   x.gender=x.gender||"Muž";
-  x.hp=clamp(num(x.hp,100),0,num(x.maxHp,100));
+  const weaponStats = ITEM_STATS[x.equipment?.weapon] || {};
+const armorStats = ITEM_STATS[x.equipment?.armor] || {};
+const effectiveMaxHp =
+  num(x.maxHp,100) +
+  (weaponStats.maxHp || 0) +
+  (armorStats.maxHp || 0);
+
+x.hp=clamp(num(x.hp,100),0,effectiveMaxHp);
   x.maxHp=Math.max(1,num(x.maxHp,100));
   x.xp=Math.max(0,num(x.xp,0));
   x.level=Math.max(1,Math.floor(x.xp/100)+1);
