@@ -331,7 +331,11 @@ input,select{width:100%;margin-top:5px;background:#120f0c;color:white;border:1px
       <div class="kv"><span>🧠 Rozum</span><b id="intelView"></b></div>
       <div class="kv"><span>🗣️ Přesvědčivost</span><b id="chaView"></b></div>
       <div class="kv"><span>🪙 Groše</span><b id="goldView"></b></div>
+<div class="kv"><span>🍗 Sytost</span><b id="hungerView"></b></div>
+<div class="bar"><span id="hungerBar"></span></div>
 
+<div class="kv"><span>😴 Energie</span><b id="fatigueView"></b></div>
+<div class="bar"><span id="fatigueBar"></span></div>
       <div id="levelBox" class="levelBox hidden">
         <b>⭐ Bod za úroveň</b>
         <div class="small">Vyber, co chceš zlepšit.</div>
@@ -1014,6 +1018,14 @@ function normalizeState(x){
   for(const k of ["koruna","mestane","venkov","podsveti"]) x.factions[k]=clamp(num(x.factions[k],0),-100,100);
   x.place=x.place||"Neznámé místo";
   x.inventory=Array.isArray(x.inventory)?x.inventory.slice(0,40):[];
+  // Survival stav – 100 = nejlepší stav, 0 = nejhorší
+x.hunger=Number.isFinite(Number(x.hunger))
+  ? Math.max(0,Math.min(100,Number(x.hunger)))
+  : 100;
+
+x.fatigue=Number.isFinite(Number(x.fatigue))
+  ? Math.max(0,Math.min(100,Number(x.fatigue)))
+  : 100;
   x.quickSlots=Array.isArray(x.quickSlots)?x.quickSlots.slice(0,4):[null,null,null,null];
 while(x.quickSlots.length<4)x.quickSlots.push(null);
   x.equipment=x.equipment&&typeof x.equipment==="object"?x.equipment:{weapon:"",armor:""};
@@ -1166,7 +1178,11 @@ function render(){
   intelView.textContent=s.intelligence;
   chaView.textContent=s.charisma;
   goldView.textContent=s.gold;
+hungerView.textContent=`${Math.round(s.hunger)} %`;
+hungerBar.style.width=`${s.hunger}%`;
 
+fatigueView.textContent=`${Math.round(s.fatigue)} %`;
+fatigueBar.style.width=`${s.fatigue}%`;
   repCrown.textContent=formatRep(s.factions.koruna);
   repTown.textContent=formatRep(s.factions.mestane);
   repCountry.textContent=formatRep(s.factions.venkov);
