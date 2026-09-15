@@ -932,12 +932,18 @@ function clearQuickSlot(){
   s.gold=Math.max(0,s.gold-cost);
 
   // Postava se zotaví jen částečně
-  s.hp=Math.max(1,Math.round(s.maxHp*0.30));
-  s.hunger=20;
-  s.fatigue=25;
+const weaponStats = ITEM_STATS[s.equipment?.weapon] || {};
+const armorStats = ITEM_STATS[s.equipment?.armor] || {};
+const effectiveMaxHp =
+  s.maxHp +
+  (weaponStats.maxHp || 0) +
+  (armorStats.maxHp || 0);
 
+s.hp=Math.max(1,Math.round(effectiveMaxHp*0.30));
+s.hunger=20;
+s.fatigue=25;
   addHistory(
-    `🏥 Léčitel tě ošetřil. Zdraví ${s.hp}/${s.maxHp}, Sytost 20 %, Energie 25 %. Zaplatil jsi ${cost} grošů.`,
+    `🏥 Léčitel tě ošetřil. Zdraví ${s.hp}/${effectiveMaxHp}, Sytost 20 %, Energie 25 %. Zaplatil jsi ${cost} grošů.`,
     "ok"
   );
 
@@ -993,9 +999,17 @@ function useItem(name){
       return;
     }
 
-    const before = s.hp;
-    s.hp = Math.min(s.maxHp, s.hp + item.value);
-    const healed = s.hp - before;
+  const before = s.hp;
+
+const weaponStats = ITEM_STATS[s.equipment?.weapon] || {};
+const armorStats = ITEM_STATS[s.equipment?.armor] || {};
+const effectiveMaxHp =
+  s.maxHp +
+  (weaponStats.maxHp || 0) +
+  (armorStats.maxHp || 0);
+
+s.hp = Math.min(effectiveMaxHp, s.hp + item.value);
+const healed = s.hp - before;
 
     s.inventory.splice(index,1);
 
