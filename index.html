@@ -1320,6 +1320,25 @@ function quick(t){actionInput.value=t;actionInput.focus()}
 
 async function act(forcedAction=null){
   if(!s)return;
+   // Při úplném vyčerpání nelze pokračovat bez odpočinku
+  if(s.fatigue<=0){
+    addHistory(
+      "😴 Zhroutil ses vyčerpáním a upadl do bezvědomí. Nejdřív si musíš odpočinout.",
+      "bad"
+    );
+    render();
+    return;
+  }
+// Postava s nulovým zdravím nemůže pokračovat
+if(s.hp<=0){
+  addHistory(
+    "❤️ Nemáš žádné zdraví a nemůžeš pokračovat v další akci.",
+    "bad"
+  );
+  render();
+  return;
+}
+  const now=Date.now();
   const now=Date.now();
   if(now-lastRequestAt<2000){
     addHistory("Počkej chvilku před dalším tahem.","bad");
@@ -1344,6 +1363,11 @@ async function act(forcedAction=null){
     // Survival – po každém úspěšném tahu ubývá sytost a energie
 s.hunger=Math.max(0,s.hunger-2);
 s.fatigue=Math.max(0,s.fatigue-1);
+    // Při úplném vyhladovění postava ztrácí zdraví
+if(s.hunger===0){
+  s.hp=Math.max(0,s.hp-10);
+  addHistory("🍗 Jsi úplně vyhladovělý. Ztrácíš 10 ❤️ zdraví.","bad");
+}
     if(s.hunger<=20 && s.hunger>0){
   addHistory(`🍗 Máš hlad. Sytost klesla na ${s.hunger} %.`,"bad");
 }
