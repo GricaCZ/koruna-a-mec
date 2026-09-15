@@ -1463,8 +1463,7 @@ const equipmentBonus = {
     const data=await r.json();
     if(!r.ok)throw new Error(data.error||"Chyba serveru");
     const beforeLevel=s.level;
-   s=normalizeState(data);
-s = normalizeState(returnedState);
+    s=normalizeState(data);
     // Survival – po každém úspěšném tahu ubývá sytost a energie
 s.hunger=Math.max(0,s.hunger-2);
 s.fatigue=Math.max(0,s.fatigue-1);
