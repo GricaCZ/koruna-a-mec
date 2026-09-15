@@ -745,9 +745,9 @@ const questHistory =
   Array.from(questHistoryById.values())
     .slice(-50);
     const maxHp = Math.max(
-      1,
-      Math.floor(num(old.maxHp, 100))
-    );
+  1,
+  Math.floor(effectiveStats.maxHp)
+);
 
     const proposedHp = clamp(
       Math.floor(num(ai.hp, old.hp)),
@@ -859,8 +859,8 @@ const questHistory =
         900
       ),
 
-      hp,
-      maxHp,
+     hp,
+maxHp: Math.max(1, Math.floor(num(old.maxHp, 100))),
 
       strength: clamp(
         Math.floor(
