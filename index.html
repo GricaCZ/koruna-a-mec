@@ -398,6 +398,9 @@ input,select{width:100%;margin-top:5px;background:#120f0c;color:white;border:1px
         <button class="secondary" onclick="quick('Pokusím se postupovat opatrně a nenápadně.')">🥷 Opatrně</button>
         <button class="secondary" onclick="quick('Zkontroluji svůj inventář a promyslím další postup.')">🎒 Připravit se</button>
         <button class="secondary" onclick="restCharacter()">😴 Odpočinout</button>
+        <button id="healerButton" class="secondary hidden" onclick="healerRescue()">
+  🏥 Pomoc léčitele
+</button>
       </div>
 <div class="quickSlotsBox">
   <div class="small"><b>🎒 Rychlé použití</b></div>
@@ -879,6 +882,26 @@ function clearQuickSlot(){
   render();
   autoSave();
 }
+  function healerRescue(){
+  if(!s || s.hp>0)return;
+
+  // Léčitel si vezme 20 % aktuálních grošů
+  const cost=Math.floor(s.gold*0.20);
+  s.gold=Math.max(0,s.gold-cost);
+
+  // Postava se zotaví jen částečně
+  s.hp=Math.max(1,Math.round(s.maxHp*0.30));
+  s.hunger=20;
+  s.fatigue=25;
+
+  addHistory(
+    `🏥 Léčitel tě ošetřil. Zdraví ${s.hp}/${s.maxHp}, Sytost 20 %, Energie 25 %. Zaplatil jsi ${cost} grošů.`,
+    "ok"
+  );
+
+  render();
+  autoSave();
+}
   function restCharacter(){
   if(!s)return;
 
@@ -1224,6 +1247,12 @@ hungerBar.style.width=`${s.hunger}%`;
 
 fatigueView.textContent=`${Math.round(s.fatigue)} %`;
 fatigueBar.style.width=`${s.fatigue}%`;
+  // Pomoc léčitele se zobrazí pouze při 0 HP
+const healerButton=document.getElementById("healerButton");
+
+if(healerButton){
+  healerButton.classList.toggle("hidden",s.hp>0);
+}
   repCrown.textContent=formatRep(s.factions.koruna);
   repTown.textContent=formatRep(s.factions.mestane);
   repCountry.textContent=formatRep(s.factions.venkov);
@@ -1332,7 +1361,7 @@ async function act(forcedAction=null){
 // Postava s nulovým zdravím nemůže pokračovat
 if(s.hp<=0){
   addHistory(
-    "❤️ Nemáš žádné zdraví a nemůžeš pokračovat v další akci.",
+    "❤️ Zhroutil ses a potřebuješ ošetření. Použij léčivý odvar, nebo zvol pomoc léčitele.",
     "bad"
   );
   render();
