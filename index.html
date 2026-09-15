@@ -1787,11 +1787,40 @@ function openNpcChronicle(){
 }
 function openShop(){
   if(!s)return;
-  shopList.innerHTML=SHOP.map((it,i)=>`
-    <div class="shopItem">
-      <div><b>${escapeHtml(it.name)}</b><div class="small">${it.type==="weapon"?"zbraň":it.type==="armor"?"zbroj":"předmět"}</div></div>
-      <div><span class="pill">${it.price} 🪙</span> <button onclick="buyItem(${i})">Koupit</button></div>
-    </div>`).join("");
+
+  shopList.innerHTML=SHOP.map((it,i)=>{
+    const stats=ITEM_STATS[it.name] || {};
+
+    const statText=[
+      it.effect==="food" ? `🍗 Sytost +${it.value} %` : "",
+      it.effect==="heal" ? `❤️ Životy +${it.value}` : "",
+      stats.strength ? `⚔️ Síla +${stats.strength}` : "",
+      stats.intelligence ? `🧠 Inteligence +${stats.intelligence}` : "",
+      stats.charisma ? `🗣️ Charisma +${stats.charisma}` : "",
+      stats.maxHp ? `❤️ Max. životy +${stats.maxHp}` : ""
+    ].filter(Boolean).join(" • ");
+
+    const typeText=
+      it.type==="weapon" ? "zbraň" :
+      it.type==="armor" ? "zbroj" :
+      "předmět";
+
+    return `
+      <div class="shopItem">
+        <div>
+          <b>${it.icon ? `${it.icon} ` : ""}${escapeHtml(it.name)}</b>
+          <div class="small">${typeText}</div>
+          ${statText ? `<div class="small">${statText}</div>` : ""}
+        </div>
+
+        <div>
+          <span class="pill">${it.price} 🪙</span>
+          <button onclick="buyItem(${i})">Koupit</button>
+        </div>
+      </div>
+    `;
+  }).join("");
+
   shopOverlay.classList.remove("hidden");
 }
 
