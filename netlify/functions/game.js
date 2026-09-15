@@ -401,10 +401,26 @@ exports.handler = async function (event) {
       body.state && typeof body.state === "object"
         ? body.state
         : {};
-const equipmentBonus =
-  body.equipmentBonus && typeof body.equipmentBonus === "object"
-    ? body.equipmentBonus
-    : {};
+const weaponName = String(old.equipment?.weapon || "").toLowerCase();
+const armorName = String(old.equipment?.armor || "").toLowerCase();
+
+const equipmentBonus = {
+  strength:
+    /železný meč/.test(weaponName) ? 3 :
+    /lovecký luk/.test(weaponName) ? 2 :
+    /dýka|rezavý meč/.test(weaponName) ? 1 : 0,
+
+  intelligence: 0,
+
+  charisma:
+    /dýka/.test(weaponName) ? 1 : 0,
+
+  maxHp:
+    /řetízková košile/.test(armorName) ? 25 :
+    /kožená zbroj/.test(armorName) ? 15 :
+    /pevný plášť/.test(armorName) ? 10 :
+    /plášť/.test(armorName) ? 5 : 0
+};
 
 const effectiveStats = {
   strength:
