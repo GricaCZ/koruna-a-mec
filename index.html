@@ -309,6 +309,7 @@ input,select{width:100%;margin-top:5px;background:#120f0c;color:white;border:1px
       <button class="secondary" onclick="openNpcChronicle()">💬 Kronika postav</button>
       <button class="secondary" onclick="openMap()">🗺️ Mapa</button>
       <button class="secondary" onclick="openShop()">🏪 Obchod</button>
+      <button class="secondary" onclick="openInventory()">🎒 Inventář</button>
       <button class="secondary" onclick="openEquipment()">🛡️ Výbava</button>
       <button class="secondary" onclick="saveGame()">💾 Uložit</button>
       <button class="secondary" onclick="loadGame()">📜 Načíst</button>
@@ -364,10 +365,7 @@ input,select{width:100%;margin-top:5px;background:#120f0c;color:white;border:1px
         <div class="small">Zbroj: <b id="armorView"></b></div>
       </div>
 
-      <div class="section">
-        <h3>🎒 Inventář</h3>
-        <div id="invView"></div>
-      </div>
+     
 
       <div class="section">
         <h3>📜 Úkoly</h3>
@@ -526,7 +524,18 @@ input,select{width:100%;margin-top:5px;background:#120f0c;color:white;border:1px
     <div class="buttons"><button class="secondary" onclick="closeOverlay('shopOverlay')">Zavřít</button></div>
   </div>
 </div>
+<div id="inventoryOverlay" class="overlay hidden">
+  <div class="modal">
+    <h2>🎒 Inventář</h2>
+    <div class="small">Všechny předměty, které právě neseš.</div>
 
+    <div id="inventoryList" class="section"></div>
+
+    <div class="buttons section">
+      <button class="secondary" onclick="closeOverlay('inventoryOverlay')">Zavřít</button>
+    </div>
+  </div>
+</div>
 <div id="equipOverlay" class="overlay hidden">
   <div class="modal">
     <h2>🛡️ Výbava</h2>
@@ -1285,12 +1294,7 @@ if(healerButton){
 
   levelBox.classList.toggle("hidden",availablePoints()<=0);
 
-  invView.innerHTML=s.inventory.length
-    ? s.inventory.map(i=>{
-        const eq=(i===s.equipment.weapon||i===s.equipment.armor)?" equipped":"";
-        return `<span class="badge${eq}">${escapeHtml(i)}</span>`;
-      }).join("")
-    : `<span class="small">Prázdný</span>`;
+  
 
   questsView.innerHTML=s.quests.length
     ? s.quests.map(q=>`<div class="quest ${q.status==="done"?"done":""}">
@@ -1727,7 +1731,77 @@ function buyItem(i){
   addHistory(`Koupeno: ${it.name} za ${it.price} grošů.`,"ok");
   render();openShop();
 }
+function openInventory(){
+  if(!s)return;
 
+  const counts={};
+  for(const name of s.inventory){
+    counts[name]=(counts[name]||0)+1;
+  }
+
+  const groups={
+    usable:[],
+    weapon:[],
+    armor:[],
+    other:[]
+  };
+
+  for(const [name,count] of Object.entries(counts)){
+    const info=getItemInfo(name);
+    const type=guessType(name);
+
+    if(info && (info.effect==="food" || info.effect==="heal")){
+      groups.usable.push({name,count,info});
+    }else if(type==="weapon"){
+      groups.weapon.push({name,count});
+    }else if(type==="armor"){
+      groups.armor.push({name,count});
+    }else{
+      groups.other.push({name,count});
+    }
+  }
+
+  function section(title,items,type){
+    if(!items.length)return "";
+
+    return `
+      <h3 class="section">${title}</h3>
+      ${items.map(item=>{
+        const equipped=
+          (type==="weapon" && s.equipment.weapon===item.name) ||
+          (type==="armor" && s.equipment.armor===item.name);
+
+        return `
+          <div class="journalItem">
+            <b>${escapeHtml(item.name)}</b>
+            ${item.count>1 ? `<span class="badge">×${item.count}</span>` : ""}
+            ${equipped ? `<span class="badge">✓ Nasazeno</span>` : ""}
+
+            ${type==="usable"
+              ? `<div class="buttons section">
+                   <button onclick='useItem(${JSON.stringify(item.name)});openInventory()'>
+                     Použít
+                   </button>
+                 </div>`
+              : ""}
+          </div>
+        `;
+      }).join("")}
+    `;
+  }
+
+  inventoryList.innerHTML=
+    section("🍞 Jídlo a lektvary",groups.usable,"usable")+
+    section("⚔️ Zbraně",groups.weapon,"weapon")+
+    section("🛡️ Zbroj",groups.armor,"armor")+
+    section("🎒 Ostatní",groups.other,"other");
+
+  if(!s.inventory.length){
+    inventoryList.innerHTML=`<div class="small">Inventář je prázdný.</div>`;
+  }
+
+  inventoryOverlay.classList.remove("hidden");
+}
 function openEquipment(){
   if(!s)return;
   equipList.innerHTML=s.inventory.map((item,i)=>{
