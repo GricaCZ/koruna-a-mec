@@ -1086,6 +1086,7 @@ async function act(forcedAction=null){
     addHistory("Vypravěč: "+s.story,"ai");
     if(s.level>beforeLevel)addHistory(`Nová úroveň ${s.level}! Máš bod na vylepšení postavy.`,"ok");
     render();
+    autoSave();
   }catch(e){
     connection.textContent="AI se nepodařilo připojit.";
     addHistory("Chyba: "+e.message,"bad");
@@ -1180,7 +1181,21 @@ function saveGame(){
 
   addHistory("Hra uložena do pozice "+slot+".","ok");
 }
+function autoSave(){
+  if(!s)return;
 
+  const slot=getCurrentSlot();
+
+  const saveData={
+    ...s,
+    savedAt:new Date().toISOString()
+  };
+
+  localStorage.setItem(
+    getSlotKey(slot),
+    JSON.stringify(saveData)
+  );
+}
 function loadSlot(slot){
   const raw=localStorage.getItem(getSlotKey(slot));
 
