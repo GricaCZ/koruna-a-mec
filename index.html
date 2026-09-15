@@ -815,6 +815,17 @@ const SHOP=[
   {name:"pevný plášť",price:18,type:"armor"},
   {name:"kožená zbroj",price:30,type:"armor"}
 ];
+  const ITEM_STATS = {
+  "rezavý meč": { strength: 1 },
+  "železný meč": { strength: 3 },
+  "lovecký luk": { strength: 2 },
+  "dýka": { strength: 1, charisma: 1 },
+
+  "plášť": { maxHp: 5 },
+  "pevný plášť": { maxHp: 10 },
+  "kožená zbroj": { maxHp: 15 },
+  "řetízková košile": { maxHp: 25 }
+};
 function getItemInfo(name){
   return SHOP.find(item => item.name === name && item.type === "item") || null;
 }
@@ -921,12 +932,18 @@ function clearQuickSlot(){
   s.gold=Math.max(0,s.gold-cost);
 
   // Postava se zotaví jen částečně
-  s.hp=Math.max(1,Math.round(s.maxHp*0.30));
-  s.hunger=20;
-  s.fatigue=25;
+const weaponStats = ITEM_STATS[s.equipment?.weapon] || {};
+const armorStats = ITEM_STATS[s.equipment?.armor] || {};
+const effectiveMaxHp =
+  s.maxHp +
+  (weaponStats.maxHp || 0) +
+  (armorStats.maxHp || 0);
 
+s.hp=Math.max(1,Math.round(effectiveMaxHp*0.30));
+s.hunger=20;
+s.fatigue=25;
   addHistory(
-    `🏥 Léčitel tě ošetřil. Zdraví ${s.hp}/${s.maxHp}, Sytost 20 %, Energie 25 %. Zaplatil jsi ${cost} grošů.`,
+    `🏥 Léčitel tě ošetřil. Zdraví ${s.hp}/${effectiveMaxHp}, Sytost 20 %, Energie 25 %. Zaplatil jsi ${cost} grošů.`,
     "ok"
   );
 
@@ -982,9 +999,17 @@ function useItem(name){
       return;
     }
 
-    const before = s.hp;
-    s.hp = Math.min(s.maxHp, s.hp + item.value);
-    const healed = s.hp - before;
+  const before = s.hp;
+
+const weaponStats = ITEM_STATS[s.equipment?.weapon] || {};
+const armorStats = ITEM_STATS[s.equipment?.armor] || {};
+const effectiveMaxHp =
+  s.maxHp +
+  (weaponStats.maxHp || 0) +
+  (armorStats.maxHp || 0);
+
+s.hp = Math.min(effectiveMaxHp, s.hp + item.value);
+const healed = s.hp - before;
 
     s.inventory.splice(index,1);
 
@@ -1100,7 +1125,14 @@ function normalizeState(x){
   x.name=x.name||"Hrdina";
   x.job=x.job||"Poutník";
   x.gender=x.gender||"Muž";
-  x.hp=clamp(num(x.hp,100),0,num(x.maxHp,100));
+  const weaponStats = ITEM_STATS[x.equipment?.weapon] || {};
+const armorStats = ITEM_STATS[x.equipment?.armor] || {};
+const effectiveMaxHp =
+  num(x.maxHp,100) +
+  (weaponStats.maxHp || 0) +
+  (armorStats.maxHp || 0);
+
+x.hp=clamp(num(x.hp,100),0,effectiveMaxHp);
   x.maxHp=Math.max(1,num(x.maxHp,100));
   x.xp=Math.max(0,num(x.xp,0));
   x.level=Math.max(1,Math.floor(x.xp/100)+1);
@@ -1263,6 +1295,20 @@ function startGame(){
 
 function render(){
   s=normalizeState(s);
+  const weaponStats = ITEM_STATS[s.equipment?.weapon] || {};
+const armorStats = ITEM_STATS[s.equipment?.armor] || {};
+
+const equipmentBonus = {
+  strength: (weaponStats.strength || 0) + (armorStats.strength || 0),
+  intelligence: (weaponStats.intelligence || 0) + (armorStats.intelligence || 0),
+  charisma: (weaponStats.charisma || 0) + (armorStats.charisma || 0),
+  maxHp: (weaponStats.maxHp || 0) + (armorStats.maxHp || 0)
+};
+
+const effectiveStrength = s.strength + equipmentBonus.strength;
+const effectiveIntelligence = s.intelligence + equipmentBonus.intelligence;
+const effectiveCharisma = s.charisma + equipmentBonus.charisma;
+const effectiveMaxHp = s.maxHp + equipmentBonus.maxHp;
   charNameView.textContent=s.name;
   jobView.textContent=s.job;
   genderView.textContent=s.gender;
@@ -1270,11 +1316,24 @@ function render(){
   levelView.textContent=s.level;
   xpView.textContent=`${s.xp} XP`;
   xpBar.style.width=(s.xp%100)+"%";
-  hpView.textContent=`${s.hp}/${s.maxHp}`;
-  hpBar.style.width=Math.max(0,Math.min(100,(s.hp/s.maxHp)*100))+"%";
-  strView.textContent=s.strength;
-  intelView.textContent=s.intelligence;
-  chaView.textContent=s.charisma;
+  hpView.textContent = equipmentBonus.maxHp
+  ? `${s.hp}/${effectiveMaxHp} (+${equipmentBonus.maxHp})`
+  : `${s.hp}/${effectiveMaxHp}`;
+
+hpBar.style.width =
+  Math.max(0, Math.min(100, (s.hp / effectiveMaxHp) * 100)) + "%";
+
+strView.textContent = equipmentBonus.strength
+  ? `${effectiveStrength} (+${equipmentBonus.strength})`
+  : effectiveStrength;
+
+intelView.textContent = equipmentBonus.intelligence
+  ? `${effectiveIntelligence} (+${equipmentBonus.intelligence})`
+  : effectiveIntelligence;
+
+chaView.textContent = equipmentBonus.charisma
+  ? `${effectiveCharisma} (+${equipmentBonus.charisma})`
+  : effectiveCharisma;
   goldView.textContent=s.gold;
 hungerView.textContent=`${Math.round(s.hunger)} %`;
 hungerBar.style.width=`${s.hunger}%`;
@@ -1408,6 +1467,15 @@ if(s.hp<=0){
   addHistory("Ty: "+action,"you");
   busy(true);
   try{
+   const weaponStats = ITEM_STATS[s.equipment?.weapon] || {};
+const armorStats = ITEM_STATS[s.equipment?.armor] || {};
+
+const equipmentBonus = {
+  strength: (weaponStats.strength || 0) + (armorStats.strength || 0),
+  intelligence: (weaponStats.intelligence || 0) + (armorStats.intelligence || 0),
+  charisma: (weaponStats.charisma || 0) + (armorStats.charisma || 0),
+  maxHp: (weaponStats.maxHp || 0) + (armorStats.maxHp || 0)
+};
     const r=await fetch("/.netlify/functions/game",{
       method:"POST",
       headers:{"Content-Type":"application/json"},
@@ -1775,13 +1843,27 @@ function openInventory(){
         const equipped=
           (type==="weapon" && s.equipment.weapon===item.name) ||
           (type==="armor" && s.equipment.armor===item.name);
+const stats=ITEM_STATS[item.name] || {};
 
+const statText=[
+  stats.strength ? `⚔️ Síla +${stats.strength}` : "",
+  stats.intelligence ? `🧠 Inteligence +${stats.intelligence}` : "",
+  stats.charisma ? `🗣️ Charisma +${stats.charisma}` : "",
+  stats.maxHp ? `❤️ Max. životy +${stats.maxHp}` : ""
+].filter(Boolean).join(" • ");
         return `
           <div class="journalItem">
             <b>${escapeHtml(item.name)}</b>
             ${item.count>1 ? `<span class="badge">×${item.count}</span>` : ""}
             ${equipped ? `<span class="badge">✓ Nasazeno</span>` : ""}
+            ${statText ? `<div class="small">${statText}</div>` : ""}
+${type==="usable" && item.info?.effect==="food"
+  ? `<div class="small">🍗 Sytost +${item.info.value} %</div>`
+  : ""}
 
+${type==="usable" && item.info?.effect==="heal"
+  ? `<div class="small">❤️ Životy +${item.info.value}</div>`
+  : ""}
             ${type==="usable"
               ? `<div class="buttons section">
                    <button onclick='useItem(${JSON.stringify(item.name)});openInventory()'>
@@ -1831,11 +1913,36 @@ function guessType(item){
 function equipItem(i,type){
   const item=s.inventory[i];
   if(!item)return;
-  s.equipment[type]=item;
-  addHistory(`Nasazeno: ${item}.`,"ok");
-  render();openEquipment();
-}
 
+  // Kliknutí na právě nasazený předmět = sundání
+  if(s.equipment[type]===item){
+    s.equipment[type]=null;
+
+    const weaponStats=ITEM_STATS[s.equipment.weapon] || {};
+    const armorStats=ITEM_STATS[s.equipment.armor] || {};
+
+    const effectiveMaxHp=
+      s.maxHp +
+      (weaponStats.maxHp || 0) +
+      (armorStats.maxHp || 0);
+
+    s.hp=Math.min(s.hp,effectiveMaxHp);
+
+    addHistory(`Sundáno: ${item}.`,"ok");
+    render();
+    autoSave();
+    openEquipment();
+    return;
+  }
+
+  // Nasazení nebo výměna předmětu
+  s.equipment[type]=item;
+
+  addHistory(`Nasazeno: ${item}.`,"ok");
+  render();
+  autoSave();
+  openEquipment();
+}
 function openMap(){
   if(!s)return;
   mapList.innerHTML=MAP.map(m=>{

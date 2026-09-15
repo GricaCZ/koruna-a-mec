@@ -401,7 +401,44 @@ exports.handler = async function (event) {
       body.state && typeof body.state === "object"
         ? body.state
         : {};
+const weaponName = String(old.equipment?.weapon || "").toLowerCase();
+const armorName = String(old.equipment?.armor || "").toLowerCase();
 
+const equipmentBonus = {
+  strength:
+    /železný meč/.test(weaponName) ? 3 :
+    /lovecký luk/.test(weaponName) ? 2 :
+    /dýka|rezavý meč/.test(weaponName) ? 1 : 0,
+
+  intelligence: 0,
+
+  charisma:
+    /dýka/.test(weaponName) ? 1 : 0,
+
+  maxHp:
+    /řetízková košile/.test(armorName) ? 25 :
+    /kožená zbroj/.test(armorName) ? 15 :
+    /pevný plášť/.test(armorName) ? 10 :
+    /plášť/.test(armorName) ? 5 : 0
+};
+
+const effectiveStats = {
+  strength:
+    num(old.strength, 5) +
+    num(equipmentBonus.strength, 0),
+
+  intelligence:
+    num(old.intelligence, 5) +
+    num(equipmentBonus.intelligence, 0),
+
+  charisma:
+    num(old.charisma, 5) +
+    num(equipmentBonus.charisma, 0),
+
+  maxHp:
+    num(old.maxHp, 100) +
+    num(equipmentBonus.maxHp, 0)
+};
     if (!action) {
       return json(400, {
         error: "Chybí akce hráče."
@@ -486,7 +523,15 @@ ${randomEvent ? `- Do tohoto tahu můžeš přirozeně zapojit náhodnou událos
 
 AKTUÁLNÍ STAV:
 ${JSON.stringify(compactState(old))}
+EFEKTIVNÍ STATISTIKY S NASAZENOU VÝBAVOU:
+- Síla: ${effectiveStats.strength}
+- Rozum: ${effectiveStats.intelligence}
+- Přesvědčivost: ${effectiveStats.charisma}
+- Max. životy: ${effectiveStats.maxHp}
 
+Tyto efektivní statistiky používej při vyhodnocování akcí hráče.
+Obsahují dočasné bonusy z nasazené výbavy.
+Bonusy výbavy nikdy nezapisuj jako trvalé zvýšení základních statistik postavy.
 AKCE HRÁČE:
 ${action}
 `;
@@ -700,9 +745,9 @@ const questHistory =
   Array.from(questHistoryById.values())
     .slice(-50);
     const maxHp = Math.max(
-      1,
-      Math.floor(num(old.maxHp, 100))
-    );
+  1,
+  Math.floor(effectiveStats.maxHp)
+);
 
     const proposedHp = clamp(
       Math.floor(num(ai.hp, old.hp)),
@@ -814,8 +859,8 @@ const questHistory =
         900
       ),
 
-      hp,
-      maxHp,
+     hp,
+maxHp: Math.max(1, Math.floor(num(old.maxHp, 100))),
 
       strength: clamp(
         Math.floor(
