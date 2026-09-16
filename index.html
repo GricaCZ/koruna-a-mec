@@ -1756,12 +1756,35 @@ journalQuests.innerHTML=`
     <div class="journalItem">🌑 Podsvětí: <b>${formatRep(s.factions.podsveti)}</b></div>`;
   journalOverlay.classList.remove("hidden");
 }
+  let npcChronicleOrder =
+  localStorage.getItem("npcChronicleOrder") || "newest";
+
+function toggleNpcChronicleOrder(){
+  npcChronicleOrder =
+    npcChronicleOrder === "newest" ? "oldest" : "newest";
+
+  localStorage.setItem("npcChronicleOrder", npcChronicleOrder);
+
+  openNpcChronicle();
+}
 function openNpcChronicle(){
   if(!s)return;
 
-  const entries=Object.entries(s.npcMemory||{});
+ const entries=Object.entries(s.npcMemory||{});
 
-  npcChronicleList.innerHTML=entries.length
+if(npcChronicleOrder==="newest"){
+  entries.reverse();
+}
+const orderButton = `
+  <div style="margin-bottom:12px">
+    <button class="secondary" onclick="toggleNpcChronicleOrder()">
+      ${npcChronicleOrder==="newest"
+        ? "🆕 Nejnovější nahoře"
+        : "📜 Nejstarší nahoře"}
+    </button>
+  </div>
+`;
+  npcChronicleList.innerHTML=orderButton + (entries.length
     ? entries.map(([name,v])=>{
         const data=v && typeof v==="object" ? v : {};
         const rel=num(data.relationship,0);
@@ -1781,7 +1804,7 @@ function openNpcChronicle(){
           </div>
         `;
       }).join("")
-    : `<div class="small">Zatím jsi nepotkal žádnou důležitou postavu.</div>`;
+   : `<div class="small">Zatím jsi nepotkal žádnou důležitou postavu.</div>`);
 
   npcChronicleOverlay.classList.remove("hidden");
 }
