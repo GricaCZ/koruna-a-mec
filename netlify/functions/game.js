@@ -211,9 +211,20 @@ function sanitizeCombat(value) {
 }
 
 function attackIntent(action) {
-  return /(zaúto|útoč|udeř|sekn|střel|bodn|vrhnu se|bojuju|bojuji)/i.test(action);
-}
+  const text = String(action || "").toLowerCase();
 
+  return /(zaúto|útoč|udeř|úder|sekn|sekám|střel|vystřel|bodn|bodám|prašt|mlát|máchn|švihn|kopn|vrhnu se|napadn|bojuju|bojuji)/i.test(text);
+}
+function escapeIntent(action) {
+  const text = String(action || "").toLowerCase();
+
+  return /(uteč|utík|prch|uprchn|unik|stáhnu se|ustoup|vzdáv|kapitul|složím zbraň|nechci bojovat)/i.test(text);
+}
+function defendIntent(action) {
+  const text = String(action || "").toLowerCase();
+
+  return /(kryj|kryju|bráním|brán|blok|uhýb|uhnu|vyhnu|štít|obrann|do obrany)/i.test(text);
+}
 function weaponBonus(name) {
   const t = String(name || "").toLowerCase();
 
@@ -258,19 +269,131 @@ function resolveCombat(old, proposed, action) {
   let note = "";
 
   if (!existing) {
-    return { combat, hp, bonusXp, note };
-  }
+  combat = sanitizeCombat(proposed);
 
-  if (!attackIntent(action)) {
+  if (!combat || !attackIntent(action)) {
     return {
-      combat: sanitizeCombat(proposed),
+      combat,
+      hp,
+      bonusXp,
+      note
+    };
+  }
+} else {
+  combat = existing;
+  if (escapeIntent(action)) {
+  const escapeRoll = deterministicRoll(old.turn, action, 10);
+
+  const escapeTarget = clamp(
+    4 + combat.difficulty,
+    4,
+    8
+  );
+
+  // Úspěšný útěk
+  if (escapeRoll >= escapeTarget) {
+    note =
+      `\n\n🏃 Útěk se podařil. Střet skončil.`;
+
+    return {
+      combat: null,
       hp,
       bonusXp,
       note
     };
   }
 
-  combat = existing;
+  // Neúspěšný útěk = protivník dostane příležitost k útoku
+  const enemyRoll = deterministicRoll(old.turn + 1, action, 3);
+
+  const incoming = Math.max(
+    0,
+    combat.difficulty * 2 +
+    enemyRoll -
+    armorBonus(old.equipment?.armor)
+  );
+
+  hp = Math.max(0, hp - incoming);
+
+  if (hp <= 0) {
+    hp = 1;
+    combat = null;
+
+    note =
+      `\n\n🏃 Útěk se nepodařil. Protivník tě při ústupu zasáhl za ${incoming} poškození. Střet skončil a zůstáváš na 1 životě.`;
+  } else if (incoming === 0) {
+    note =
+      `\n\n🏃 Útěk se nepodařil, ale následný útok protivníka tvoje zbroj zcela zablokovala. Střet pokračuje.`;
+  } else {
+    note =
+      `\n\n🏃 Útěk se nepodařil. Protivník využil příležitosti a způsobil ti ${incoming} poškození. Střet pokračuje.`;
+  }
+
+  return {
+    combat,
+    hp,
+    bonusXp,
+    note
+  };
+}
+if (defendIntent(action)) {
+  const enemyRoll = deterministicRoll(old.turn + 1, action, 3);
+
+  const defenseBonus = 3;
+
+  const incoming = Math.max(
+    0,
+    combat.difficulty * 2 +
+    enemyRoll -
+    armorBonus(old.equipment?.armor) -
+    defenseBonus
+  );
+
+  hp = Math.max(0, hp - incoming);
+
+  if (hp <= 0) {
+    hp = 1;
+    combat = null;
+
+    note =
+      `\n\n🛡️ Bránil ses, ale protivník překonal tvoji obranu a způsobil ti ${incoming} poškození. Střet skončil a zůstáváš na 1 životě.`;
+  } else if (incoming === 0) {
+    note =
+      `\n\n🛡️ Úspěšná obrana! Útok protivníka jsi zcela vykryl. Neztratil jsi žádné životy.`;
+  } else {
+    note =
+      `\n\n🛡️ Bráníš se a zmírňuješ útok protivníka. Ztrácíš ${incoming} životů.`;
+  }
+
+  return {
+    combat,
+    hp,
+    bonusXp,
+    note
+  };
+}
+  if (!attackIntent(action)) {
+  const proposedCombat = sanitizeCombat(proposed);
+
+  if (!proposedCombat) {
+    note =
+      `\n\n🤝 Střet byl ukončen bez dalšího boje.`;
+
+    return {
+      combat: null,
+      hp,
+      bonusXp,
+      note
+    };
+  }
+
+  return {
+    combat,
+    hp,
+    bonusXp,
+    note
+  };
+}
 
   const roll = deterministicRoll(old.turn, action, 4);
 
@@ -304,7 +427,7 @@ function resolveCombat(old, proposed, action) {
   const enemyRoll = deterministicRoll(old.turn + 1, action, 3);
 
   const incoming = Math.max(
-    1,
+    0,
     combat.difficulty * 2 +
     enemyRoll -
     armorBonus(old.equipment?.armor)
@@ -319,8 +442,14 @@ function resolveCombat(old, proposed, action) {
     note =
       `\n\n[Herní pravidla: způsobil jsi ${playerDamage} ztráty výdrže. Postava byla v tomto střetu poražena a zůstává na 1 životě.]`;
   } else {
+  if(incoming === 0){
     note =
-      `\n\n[Herní pravidla: protivník ztratil ${playerDamage} výdrže, tvoje postava ${incoming} životů.]`;
+      `\n\n⚔️ Zásah: protivník ztratil ${playerDamage} výdrže. 🛡️ Protiútok byl zbrojí zcela zablokován.`;
+  } else {
+    note =
+      `\n\n⚔️ Zásah: protivník ztratil ${playerDamage} výdrže. 🛡️ Protivník zaútočil zpět a způsobil ti ${incoming} poškození.`;
+  }
+}
   }
 
   return {
@@ -518,6 +647,8 @@ Pravidla:
 - combat je null mimo střet. Při novém střetu použij objekt:
   {"enemy":"název protivníka","enemyHp":30,"enemyMaxHp":30,"difficulty":1}
 - Během již probíhajícího střetu nerozhoduj číselné poškození; to dopočítá server.
+- Během probíhajícího střetu nepopisuj výsledek útoku ani protiútoku jako jistý zásah, minutí, zranění nebo porážku. Popiš pouze pokus o akci; skutečný výsledek bojového kola doplní server.
+- Pokud probíhající střet skončí jinak než poražením protivníka, například dohodou, kapitulací nebo úspěšným přesvědčením protivníka, vrať combat jako null. Jinak během probíhajícího střetu zachovej combat objekt.
 - summary udržuj krátké, věcné a jen s informacemi důležitými do budoucna.
 ${randomEvent ? `- Do tohoto tahu můžeš přirozeně zapojit náhodnou událost: ${randomEvent}` : ""}
 
