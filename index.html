@@ -1767,6 +1767,27 @@ function toggleNpcChronicleOrder(){
 
   openNpcChronicle();
 }
+  function getNpcRelationshipGroup(value){
+  const rel=num(value,0);
+
+  if(rel>=3){
+    return {key:"ally",icon:"🤝",label:"Spojenci"};
+  }
+
+  if(rel>=1){
+    return {key:"friendly",icon:"🙂",label:"Přátelské postavy"};
+  }
+
+  if(rel<=-3){
+    return {key:"enemy",icon:"☠️",label:"Úhlavní nepřátelé"};
+  }
+
+  if(rel<=-1){
+    return {key:"hostile",icon:"😠",label:"Nepřátelské postavy"};
+  }
+
+  return {key:"neutral",icon:"⚪",label:"Neutrální postavy"};
+}
 function openNpcChronicle(){
   if(!s)return;
 
@@ -1784,27 +1805,69 @@ const orderButton = `
     </button>
   </div>
 `;
-  npcChronicleList.innerHTML=orderButton + (entries.length
-    ? entries.map(([name,v])=>{
-        const data=v && typeof v==="object" ? v : {};
-        const rel=num(data.relationship,0);
-        const note=data.note || data.notes || "";
-        const lastSeen=data.lastSeen || "";
+  const groups = {
+  ally: [],
+  friendly: [],
+  neutral: [],
+  hostile: [],
+  enemy: []
+};
 
-        return `
-          <div class="journalItem">
-            <b>👤 ${escapeHtml(name)}</b>
-            <div class="small">Vztah: ${formatRep(rel)}</div>
-            ${lastSeen
-              ? `<div class="small">📍 Naposledy spatřen: ${escapeHtml(lastSeen)}</div>`
-              : ""}
-            ${note
-              ? `<div style="margin-top:6px">${escapeHtml(note)}</div>`
-              : ""}
-          </div>
-        `;
-      }).join("")
-   : `<div class="small">Zatím jsi nepotkal žádnou důležitou postavu.</div>`);
+entries.forEach(([name,v])=>{
+  const data=v && typeof v==="object" ? v : {};
+  const group=getNpcRelationshipGroup(data.relationship);
+  groups[group.key].push([name,data]);
+});
+
+const groupDefinitions = [
+  {key:"ally",icon:"🤝",label:"Spojenci"},
+  {key:"friendly",icon:"🙂",label:"Přátelské postavy"},
+  {key:"neutral",icon:"⚪",label:"Neutrální postavy"},
+  {key:"hostile",icon:"😠",label:"Nepřátelské postavy"},
+  {key:"enemy",icon:"☠️",label:"Úhlavní nepřátelé"}
+];
+
+const groupsHtml = groupDefinitions.map(group=>{
+  const people=groups[group.key];
+
+  if(!people.length)return "";
+
+  const peopleHtml=people.map(([name,data])=>{
+    const rel=num(data.relationship,0);
+    const note=data.note || data.notes || "";
+    const lastSeen=data.lastSeen || "";
+
+    return `
+      <div class="journalItem">
+        <b>👤 ${escapeHtml(name)}</b>
+        <div class="small">Vztah: ${formatRep(rel)}</div>
+
+        ${lastSeen
+          ? `<div class="small">📍 Naposledy spatřen: ${escapeHtml(lastSeen)}</div>`
+          : ""}
+
+        ${note
+          ? `<div style="margin-top:6px">${escapeHtml(note)}</div>`
+          : ""}
+      </div>
+    `;
+  }).join("");
+
+  return `
+    <div style="margin-top:16px;margin-bottom:8px">
+      <b>${group.icon} ${group.label}</b>
+      <span class="small"> (${people.length})</span>
+    </div>
+
+    ${peopleHtml}
+  `;
+}).join("");
+
+npcChronicleList.innerHTML =
+  orderButton +
+  (entries.length
+    ? groupsHtml
+    : `<div class="small">Zatím jsi nepotkal žádnou důležitou postavu.</div>`);
 
   npcChronicleOverlay.classList.remove("hidden");
 }
